@@ -24,14 +24,11 @@ const ical = require('../node-ical.js');
 const data = ical.parseFile(path.join(__dirname, 'example-rrule.ics'));
 
 // Extract VEVENT components for iteration.
-const events = Object
-  .values(data)
-  .filter(item => item.type === 'VEVENT' && !item.recurrenceid);
+const events = Object.values(data).filter(item => item.type === 'VEVENT');
 
 // Use a fixed date range to keep expansion finite (recurrences can be unbounded).
-// Pin the bounds to UTC so converting via toJSDate() stays stable across environments.
-const rangeStart = DateTime.fromISO('2017-01-01', {zone: 'UTC'}).startOf('day');
-const rangeEnd = DateTime.fromISO('2017-12-31', {zone: 'UTC'}).endOf('day');
+const rangeStart = DateTime.fromISO('2017-01-01');
+const rangeEnd = DateTime.fromISO('2017-12-31');
 
 for (const event of events) {
   const title = event.summary;
@@ -51,72 +48,41 @@ for (const event of events) {
     continue;
   }
 
-  // Expand RRULE start dates within the range, keying each occurrence by its exact start time.
-  const instanceDates = new Map();
-  for (const date of event.rrule.between(rangeStart.toJSDate(), rangeEnd.toJSDate(), true)) {
-    const occurrence = DateTime.fromJSDate(date);
-    const occurrenceUtc = occurrence.toUTC();
-    const occurrenceStamp = occurrenceUtc.toISO();
-    const lookupKey = occurrenceUtc.toISODate();
-    if (event.recurrences && event.recurrences[lookupKey]) {
-      continue;
-    }
+  // Expand RRULE start dates within the range.
+  const dates = event.rrule.between(rangeStart.toJSDate(), rangeEnd.toJSDate(), true, () => true);
 
-    if (!instanceDates.has(occurrenceStamp)) {
-      instanceDates.set(occurrenceStamp, {
-        occurrenceStart: occurrence,
-        lookupKey,
-      });
-    }
-  }
-
-  // Overrides may move an instance into range; merge by RECURRENCE-ID day so each occurrence prints once.
+  // The dates array holds valid instances in-range. Overrides may move an instance into range,
+  // so include override dates not already yielded by rrule (avoid duplicates).
   if (event.recurrences) {
-    for (const recurrence of Object.values(event.recurrences)) {
-      const recurStart = recurrence?.start instanceof Date ? DateTime.fromJSDate(recurrence.start) : null;
-      const recurId = recurrence?.recurrenceid instanceof Date ? DateTime.fromJSDate(recurrence.recurrenceid) : null;
-      if (!recurStart || !recurId) {
-        continue;
+    for (const r of Object.keys(event.recurrences)) {
+      const rDate = new Date(r);
+      const rDateTime = DateTime.fromJSDate(rDate);
+      // Avoid duplicates: only add if not already present from rrule.
+      const insideRange = rDateTime >= rangeStart && rDateTime <= rangeEnd;
+      const alreadyPresent = dates.some(d => d.getTime() === rDate.getTime());
+      if (insideRange && !alreadyPresent) {
+        dates.push(rDate);
       }
-
-      const insideRange = recurStart >= rangeStart && recurStart <= rangeEnd;
-      if (!insideRange) {
-        continue;
-      }
-
-      const recurUtc = recurId.toUTC();
-      const recurStamp = recurUtc.toISO();
-      instanceDates.set(recurStamp, {
-        occurrenceStart: recurStart,
-        lookupKey: recurUtc.toISODate(),
-      });
     }
   }
 
-  // Build and print each resulting instance in chronological order.
-  const dates = Array
-    .from(instanceDates.values())
-    .sort((a, b) => a.occurrenceStart.toMillis() - b.occurrenceStart.toMillis());
-
-  for (const {occurrenceStart, lookupKey} of dates) {
+  // Build and print each resulting instance.
+  for (const date of dates) {
     let curEvent = event;
     let showRecurrence = true;
     let curDuration = duration;
 
-    startDate = occurrenceStart;
+    startDate = DateTime.fromJSDate(date);
 
     // Look up overrides/EXDATEs by date (YYYY-MM-DD), as represented by node-ical.
-    const dateLookupKey = lookupKey;
+    const dateLookupKey = date.toISOString().slice(0, 10);
 
     // Apply per-date override if present; otherwise check EXDATE.
     if (curEvent.recurrences && curEvent.recurrences[dateLookupKey]) {
       // We found an override, so for this recurrence, use a potentially different title, start date, and duration.
       curEvent = curEvent.recurrences[dateLookupKey];
       startDate = DateTime.fromJSDate(curEvent.start);
-      const overrideEnd = curEvent.end instanceof Date ? DateTime.fromJSDate(curEvent.end) : null;
-      if (overrideEnd) {
-        curDuration = overrideEnd.diff(startDate);
-      }
+      curDuration = DateTime.fromJSDate(curEvent.end).diff(startDate);
     } else if (curEvent.exdate && curEvent.exdate[dateLookupKey]) {
       // If there's no recurrence override, check for an exception date. Exception dates represent exceptions to the rule.
       // This date is an exception date, which means we should skip it in the recurrence pattern.

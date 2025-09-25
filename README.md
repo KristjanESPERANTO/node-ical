@@ -230,6 +230,42 @@ When expanding recurrences (RRULEs), node-ical takes the timezone from the DTSTA
 
 - Every parsed `start`/`end` value is a JavaScript `Date` that represents the **exact instant in UTC**. When DTSTART carries an IANA timezone, the parser attaches a non-enumerable `tz` property (for example `event.start.tz === 'Europe/Zurich'`). All-day values also expose `dateOnly === true`, which makes it easy to distinguish floating all-day events from timed ones.
 - Prior to v0.22, all-day DTSTART values were normalised to `00:00:00Z` and their timezone metadata was lost. The modern behaviour preserves the original instant *and* its timezone, which keeps RRULE expansions and DST transitions correct. Treat this as a breaking behaviour change when migrating from older releases.
+- To render the day in the originating timezone (for example, to display an all-day event on "25 March" in its local time), derive it explicitly:
+
+    ```js
+    const localDay = new Intl.DateTimeFormat('de-CH', {
+        timeZone: event.start.tz ?? 'UTC',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).format(event.start);
+    ```
+
+    If your runtime ships [Temporal](https://tc39.es/proposal-temporal/), you can also round-trip via:
+
+    ```js
+    const zoned = Temporal.ZonedDateTime.from({
+        timeZone: event.start.tz ?? 'UTC',
+        instant: Temporal.Instant.fromEpochMilliseconds(event.start.valueOf()),
+    }).startOfDay();
+    ```
+
+Consumers that previously relied on implicit midnight UTC should update their handling to restore the local day using the attached timezone.
+
+See the following example scripts for practical demonstration:
+- [`examples/example-rrule-basic.js`](./examples/example-rrule-basic.js) – minimal RRULE expansion with native `Date`
+- [`examples/example-rrule-moment.js`](./examples/example-rrule-moment.js)
+- [`examples/example-rrule-luxon.js`](./examples/example-rrule-luxon.js)
+- [`examples/example-rrule-dayjs.js`](./examples/example-rrule-dayjs.js)
+- [`examples/example-rrule-datefns.js`](./examples/example-rrule-datefns.js)
+- [`examples/example-rrule-vanilla.js`](./examples/example-rrule-vanilla.js)
+
+
+<<<<<<< HEAD
+### Working with the parsed dates
+
+- Every parsed `start`/`end` value is a JavaScript `Date` that represents the **exact instant in UTC**. When DTSTART carries an IANA timezone, the parser attaches a non-enumerable `tz` property (for example `event.start.tz === 'Europe/Zurich'`). All-day values also expose `dateOnly === true`, which makes it easy to distinguish floating all-day events from timed ones.
+- Prior to v0.22, all-day DTSTART values were normalised to `00:00:00Z` and their timezone metadata was lost. The modern behaviour preserves the original instant *and* its timezone, which keeps RRULE expansions and DST transitions correct. Treat this as a breaking behaviour change when migrating from older releases.
 - To render the day in the originating timezone (for example, to display an all-day event on “25 March” in its local time), derive it explicitly:
 
     ```js
@@ -260,6 +296,15 @@ See the following example scripts for practical demonstration:
 - [`examples/example-rrule-datefns.js`](./examples/example-rrule-datefns.js)
 - [`examples/example-rrule-vanilla.js`](./examples/example-rrule-vanilla.js)
 
+=======
+See the following example scripts for practical demonstration:
+- [`examples/example-rrule-moment.js`](./examples/example-rrule-moment.js)
+- [`examples/example-rrule-luxon.js`](./examples/example-rrule-luxon.js)
+- [`examples/example-rrule-dayjs.js`](./examples/example-rrule-dayjs.js)
+- [`examples/example-rrule-datefns.js`](./examples/example-rrule-datefns.js)
+- [`examples/example-rrule-vanilla.js`](./examples/example-rrule-vanilla.js)
+
+>>>>>>> 005c101 (feat(examples): add multiple examples for expanding recurring events using various date libraries)
 Each library may display timezones differently, but the recurrence logic is the same.
 
 ## Under the hood
