@@ -7,13 +7,14 @@
 [![Donate](https://img.shields.io/badge/donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RAQSDY9YNZVCL)
 [![GitHub stars](https://img.shields.io/github/stars/jens-maus/node-ical.svg?style=social&label=Star)](https://github.com/jens-maus/node-ical/stargazers/)
 
-A minimal iCalendar/ICS (http://tools.ietf.org/html/rfc5545) parser for Node.js. This module is a direct fork
-of the ical.js module by Peter Braden (https://github.com/peterbraden/ical.js) which is primarily targeted
-for parsing iCalender/ICS files in a pure JavaScript environment. (ex. within the browser itself) This node-ical
-module however, primarily targets Node.js use and allows for more flexible APIs and interactions within a Node environment. (like filesystem access!)
+``node-ical`` is a robust iCalendar/ICS (http://tools.ietf.org/html/rfc5545) library for Node.js. This module is a direct fork
+of the `ical.js` module by Peter Braden (https://github.com/peterbraden/ical.js), originally focused on pure parsing in JavaScript environments (e.g. browser).
+
+``node-ical`` goes beyond simple parsing: it not only extracts and structures iCalendar/ICS data, but also expands recurring events (RRULE, EXDATE, RDATE), resolves timezones, and provides practical calendar logic for Node.js applications. Flexible APIs and Node-specific features (like filesystem access) are included.
 
 ## Install
-node-ical is availble on npm:
+``node-ical`` is available on npm:
+
 ```sh
 npm install node-ical
 ```
@@ -252,6 +253,83 @@ When expanding recurrences (RRULEs), node-ical takes the timezone from the DTSTA
 
 Consumers that previously relied on implicit midnight UTC should update their handling to restore the local day using the attached timezone.
 
+See the following example scripts for practical demonstrations that all expand one shared `example-rrule.ics` fixture and then format the results with different date libraries:
+- [`examples/example-rrule-basic.js`](./examples/example-rrule-basic.js) – minimal RRULE expansion with native `Date`
+- [`examples/example-rrule-moment.js`](./examples/example-rrule-moment.js)
+- [`examples/example-rrule-luxon.js`](./examples/example-rrule-luxon.js)
+- [`examples/example-rrule-dayjs.js`](./examples/example-rrule-dayjs.js)
+- [`examples/example-rrule-datefns.js`](./examples/example-rrule-datefns.js)
+- [`examples/example-rrule-vanilla.js`](./examples/example-rrule-vanilla.js)
+
+Each script calls `expandRecurringEvents(...)` to materialize the recurrence instances; the only variation is how the start/end values are formatted. Timezone presentation differs per library, but the underlying recurrence math stays identical. For a deep dive into the helper itself, see [Event expansion helpers](#event-expansion-helpers).
+
+### Event expansion helpers
+
+If you need concrete calendar instances (instead of raw `VEVENT` objects with RRULES/EXDATE/RECURRENCE-ID), use `expandRecurringEvents` to materialize every occurrence in a date window. The helper deduplicates overrides, respects exclusions, and keeps the link to the original event for further inspection.
+
+```javascript
+const ical = require('node-ical');
+
+const data = ical.parseFile('./examples/example-rrule.ics');
+const rangeStart = new Date('2017-06-01T00:00:00Z');
+const rangeEnd = new Date('2017-09-01T00:00:00Z');
+
+const instances = ical.expandRecurringEvents(data, rangeStart, rangeEnd);
+for (const inst of instances) {
+    console.log(inst.summary, inst.start.toISOString(), inst.end.toISOString());
+}
+```
+
+When working with promises, the async companion accepts the same arguments but starts from a parsed-data promise:
+
+```javascript
+const dataPromise = ical.async.parseFile('./examples/example-rrule.ics');
+const instances = await ical.expandRecurringEventsAsync(dataPromise, rangeStart, rangeEnd);
+```
+
+Both helpers return an array of objects shaped like:
+
+```javascript
+{
+    summary: string,
+    start: Date,
+    end: Date,
+    duration: number, // milliseconds
+    uid: string,
+    original: iCalEvent // source VEVENT (original or override)
+}
+```
+
+You can post-filter the array (for example, by summary or by `original` properties) to build application-specific views.
+
+
+<<<<<<< HEAD
+### Working with the parsed dates
+
+- Every parsed `start`/`end` value is a JavaScript `Date` that represents the **exact instant in UTC**. When DTSTART carries an IANA timezone, the parser attaches a non-enumerable `tz` property (for example `event.start.tz === 'Europe/Zurich'`). All-day values also expose `dateOnly === true`, which makes it easy to distinguish floating all-day events from timed ones.
+- Prior to v0.22, all-day DTSTART values were normalised to `00:00:00Z` and their timezone metadata was lost. The modern behaviour preserves the original instant *and* its timezone, which keeps RRULE expansions and DST transitions correct. Treat this as a breaking behaviour change when migrating from older releases.
+- To render the day in the originating timezone (for example, to display an all-day event on "25 March" in its local time), derive it explicitly:
+
+    ```js
+    const localDay = new Intl.DateTimeFormat('de-CH', {
+        timeZone: event.start.tz ?? 'UTC',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    }).format(event.start);
+    ```
+
+    If your runtime ships [Temporal](https://tc39.es/proposal-temporal/), you can also round-trip via:
+
+    ```js
+    const zoned = Temporal.ZonedDateTime.from({
+        timeZone: event.start.tz ?? 'UTC',
+        instant: Temporal.Instant.fromEpochMilliseconds(event.start.valueOf()),
+    }).startOfDay();
+    ```
+
+Consumers that previously relied on implicit midnight UTC should update their handling to restore the local day using the attached timezone.
+
 See the following example scripts for practical demonstration:
 - [`examples/example-rrule-basic.js`](./examples/example-rrule-basic.js) – minimal RRULE expansion with native `Date`
 - [`examples/example-rrule-moment.js`](./examples/example-rrule-moment.js)
@@ -298,14 +376,60 @@ See the following example scripts for practical demonstration:
 
 =======
 See the following example scripts for practical demonstration:
+=======
+See the following example scripts for practical demonstrations that all expand one shared `example-rrule.ics` fixture and then format the results with different date libraries:
+>>>>>>> 9d146fb (feat: implement recurring events expansion)
 - [`examples/example-rrule-moment.js`](./examples/example-rrule-moment.js)
 - [`examples/example-rrule-luxon.js`](./examples/example-rrule-luxon.js)
 - [`examples/example-rrule-dayjs.js`](./examples/example-rrule-dayjs.js)
 - [`examples/example-rrule-datefns.js`](./examples/example-rrule-datefns.js)
 - [`examples/example-rrule-vanilla.js`](./examples/example-rrule-vanilla.js)
 
+<<<<<<< HEAD
 >>>>>>> 005c101 (feat(examples): add multiple examples for expanding recurring events using various date libraries)
 Each library may display timezones differently, but the recurrence logic is the same.
+=======
+Each script calls `expandRecurringEvents(...)` to materialize the recurrence instances; the only variation is how the start/end values are formatted. Timezone presentation differs per library, but the underlying recurrence math stays identical. For a deep dive into the helper itself, see [Event expansion helpers](#event-expansion-helpers).
+
+### Event expansion helpers
+
+If you need concrete calendar instances (instead of raw `VEVENT` objects with RRULES/EXDATE/RECURRENCE-ID), use `expandRecurringEvents` to materialize every occurrence in a date window. The helper deduplicates overrides, respects exclusions, and keeps the link to the original event for further inspection.
+
+```javascript
+const ical = require('node-ical');
+
+const data = ical.parseFile('./examples/example-rrule.ics');
+const rangeStart = new Date('2017-06-01T00:00:00Z');
+const rangeEnd = new Date('2017-09-01T00:00:00Z');
+
+const instances = ical.expandRecurringEvents(data, rangeStart, rangeEnd);
+for (const inst of instances) {
+    console.log(inst.summary, inst.start.toISOString(), inst.end.toISOString());
+}
+```
+
+When working with promises, the async companion accepts the same arguments but starts from a parsed-data promise:
+
+```javascript
+const dataPromise = ical.async.parseFile('./examples/example-rrule.ics');
+const instances = await ical.expandRecurringEventsAsync(dataPromise, rangeStart, rangeEnd);
+```
+
+Both helpers return an array of objects shaped like:
+
+```javascript
+{
+    summary: string,
+    start: Date,
+    end: Date,
+    duration: number, // milliseconds
+    uid: string,
+    original: iCalEvent // source VEVENT (original or override)
+}
+```
+
+You can post-filter the array (for example, by summary or by `original` properties) to build application-specific views.
+>>>>>>> 9d146fb (feat: implement recurring events expansion)
 
 ## Under the hood
 

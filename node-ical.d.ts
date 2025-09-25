@@ -60,6 +60,24 @@ declare module 'node-ical' {
   export function parseFile(file: string): CalendarResponse;
 
   /**
+   * Expand VEVENT components (including RRULE/EXDATE/RECURRENCE-ID handling) into individual instances within a date range.
+   */
+  export function expandRecurringEvents(
+    data: CalendarResponse,
+    rangeStart: Date,
+    rangeEnd: Date
+  ): ExpandedEventInstance[];
+
+  /**
+   * Async variant that accepts a promise resolving to parsed ICS data and returns the expanded instances.
+   */
+  export function expandRecurringEventsAsync(
+    dataPromise: Promise<CalendarResponse>,
+    rangeStart: Date,
+    rangeEnd: Date
+  ): Promise<ExpandedEventInstance[]>;
+
+  /**
      * Response objects
      */
   export type NodeIcalCallback = (error: any, data: CalendarResponse | undefined) => void;
@@ -211,4 +229,13 @@ declare module 'node-ical' {
   export type Class = 'PUBLIC' | 'PRIVATE' | 'CONFIDENTIAL';
   export type Method = 'PUBLISH' | 'REQUEST' | 'REPLY' | 'ADD' | 'CANCEL' | 'REFRESH' | 'COUNTER' | 'DECLINECOUNTER';
   export type VEventStatus = 'TENTATIVE' | 'CONFIRMED' | 'CANCELLED';
+
+  export type ExpandedEventInstance = {
+    summary?: string;
+    start: Date;
+    end: Date;
+    duration: number;
+    uid?: string;
+    original: VEvent;
+  };
 }
