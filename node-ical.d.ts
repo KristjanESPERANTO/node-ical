@@ -1,5 +1,5 @@
 declare module 'node-ical' {
-  import {type RRule} from 'rrule';
+  import {type RRule} from 'rrule-temporal';
 
   /**
    * Minimal Fetch options type (subset of RequestInit) to avoid requiring DOM lib.
