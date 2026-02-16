@@ -1,5 +1,5 @@
 ---
-name: Release (npm publish via OIDC + version bump PR)
+name: Release (npm publish + version bump PR)
 
 on:
   release:
@@ -78,6 +78,7 @@ jobs:
       - name: Create PR for version bump back to default branch
         uses: peter-evans/create-pull-request@v6
         with:
+          base: master
           commit-message: "chore(release): ${{ steps.ver.outputs.version }}"
           title: "chore(release): ${{ steps.ver.outputs.version }}"
           body: |
