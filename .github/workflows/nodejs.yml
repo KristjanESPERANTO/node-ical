@@ -29,7 +29,13 @@ jobs:
       env:
         CI: true
 
-    - name: Run UnitTests
-      run: npm test
+    - name: Type Check
+      run: npm run test:types
+
+    - name: Lint
+      run: npx xo
+
+    - name: Unit Tests
+      run: npx mocha --timeout 8000
       env:
         CI: true
