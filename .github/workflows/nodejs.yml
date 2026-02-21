@@ -2,9 +2,35 @@ name: CI
 
 on: [push, pull_request]
 
-jobs:
-  build:
+permissions:
+  contents: read
 
+jobs:
+  lint:
+    name: Type Check & Lint
+    runs-on: ubuntu-slim
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Use Node.js LTS
+      uses: actions/setup-node@v6
+      with:
+        node-version: lts/*
+        cache: npm
+
+    - name: Install Dependencies
+      run: npm ci
+
+    - name: Type Check
+      run: npm run test:types
+
+    - name: Lint
+      run: npx xo
+
+  test:
+    name: Test (Node ${{ matrix.node-version }}, ${{ matrix.os }})
+    needs: lint
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -15,24 +41,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
-      
+
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v6
       with:
         node-version: ${{ matrix.node-version }}
-    
+        cache: npm
+
     - name: Install Dependencies
       run: npm ci
-    
-    - name: Install Test
-      run: npm install
-      
+
     - name: Generate windowsZones (strict)
       run: node build/update-windows-zones.mjs
       env:
         CI: true
 
-    - name: Run UnitTests
-      run: npm test
+    - name: Unit Tests
+      run: npx mocha --timeout 8000
       env:
         CI: true
