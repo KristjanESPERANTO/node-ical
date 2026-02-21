@@ -27,9 +27,6 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
 
-      - name: Ensure recent npm (for Trusted Publishing / OIDC)
-        run: npm install -g npm@latest
-
       - name: Validate release tag (must be SemVer without leading "v")
         id: ver
         shell: bash
