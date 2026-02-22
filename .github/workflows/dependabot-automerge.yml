@@ -22,11 +22,27 @@ jobs:
         id: metadata
         uses: dependabot/fetch-metadata@v2
 
+      - name: Determine if PR should be auto-merged
+        id: check
+        run: |
+          DEP="${{ steps.metadata.outputs.dependency-type }}"
+          UPD="${{ steps.metadata.outputs.update-type }}"
+          SEC="${{ steps.metadata.outputs.ghsa-ids }}"
+
+          # production: patch always; minor only for security fixes
+          if [[ "$DEP" == "direct:production" && "$UPD" == "version-update:semver-patch" ]]; then
+            echo "result=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$DEP" == "direct:production" && "$UPD" == "version-update:semver-minor" && -n "$SEC" ]]; then
+            echo "result=true" >> "$GITHUB_OUTPUT"
+          # development: patch and minor always
+          elif [[ "$DEP" == "direct:development" && ("$UPD" == "version-update:semver-patch" || "$UPD" == "version-update:semver-minor") ]]; then
+            echo "result=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Auto-merge eligible Dependabot PRs
-        if: |
-          (steps.metadata.outputs.dependency-type == 'direct:production' && steps.metadata.outputs.update-type == 'version-update:semver-patch') ||
-          (steps.metadata.outputs.dependency-type == 'direct:production' && steps.metadata.outputs.update-type == 'version-update:semver-minor' && steps.metadata.outputs.ghsa-ids != '') ||
-          (steps.metadata.outputs.dependency-type == 'direct:development' && (steps.metadata.outputs.update-type == 'version-update:semver-minor' || steps.metadata.outputs.update-type == 'version-update:semver-patch'))
+        if: steps.check.outputs.result == 'true'
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
