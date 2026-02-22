@@ -34,11 +34,12 @@ jobs:
           DEP: ${{ steps.metadata.outputs.dependency-type }}
           UPD: ${{ steps.metadata.outputs.update-type }}
           SEC: ${{ steps.metadata.outputs.ghsa-id }}
+          ALERT_STATE: ${{ steps.metadata.outputs.alert-state }}
         run: |
           # production: patch always; any security fix regardless of update-type
           if [[ "$DEP" == "direct:production" && "$UPD" == "version-update:semver-patch" ]]; then
             echo "result=true" >> "$GITHUB_OUTPUT"
-          elif [[ "$DEP" == "direct:production" && -n "$SEC" ]]; then
+          elif [[ "$DEP" == "direct:production" && -n "$SEC" && "$ALERT_STATE" == "OPEN" ]]; then
             echo "result=true" >> "$GITHUB_OUTPUT"
           # development: patch and minor always
           elif [[ "$DEP" == "direct:development" && ("$UPD" == "version-update:semver-patch" || "$UPD" == "version-update:semver-minor") ]]; then
