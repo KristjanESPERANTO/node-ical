@@ -32,7 +32,7 @@ jobs:
         env:
           DEP: ${{ steps.metadata.outputs.dependency-type }}
           UPD: ${{ steps.metadata.outputs.update-type }}
-          SEC: ${{ steps.metadata.outputs.ghsa-ids }}
+          SEC: ${{ steps.metadata.outputs.ghsa-id }}
         run: |
           # production: patch always; any security fix regardless of update-type
           if [[ "$DEP" == "direct:production" && "$UPD" == "version-update:semver-patch" ]]; then
