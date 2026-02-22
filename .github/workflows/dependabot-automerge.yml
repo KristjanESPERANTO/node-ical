@@ -1,7 +1,7 @@
 # Automatically merge Dependabot PRs when version comparison is within the
 # configured range. Merge rules:
 #   - production deps:   semver patch
-#   - production deps:   semver minor (security fixes only)
+#   - production deps:   any security fix (any update-type)
 #   - development deps:  semver minor (and patch)
 
 name: Auto-Merge Dependabot PRs
@@ -22,19 +22,22 @@ jobs:
         id: metadata
         uses: dependabot/fetch-metadata@21025c705c08248db411dc16f3619e6b5f9ea21a # v2.5.0
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # alert-lookup requires a PAT; GITHUB_TOKEN is not accepted by the
+          # Dependabot Alerts API. AUTO_MERGE_TOKEN must have repo scope.
+          github-token: ${{ secrets.AUTO_MERGE_TOKEN }}
+          alert-lookup: true
 
       - name: Determine if PR should be auto-merged
         id: check
+        env:
+          DEP: ${{ steps.metadata.outputs.dependency-type }}
+          UPD: ${{ steps.metadata.outputs.update-type }}
+          SEC: ${{ steps.metadata.outputs.ghsa-ids }}
         run: |
-          DEP="${{ steps.metadata.outputs.dependency-type }}"
-          UPD="${{ steps.metadata.outputs.update-type }}"
-          SEC="${{ steps.metadata.outputs.ghsa-ids }}"
-
-          # production: patch always; minor only for security fixes
+          # production: patch always; any security fix regardless of update-type
           if [[ "$DEP" == "direct:production" && "$UPD" == "version-update:semver-patch" ]]; then
             echo "result=true" >> "$GITHUB_OUTPUT"
-          elif [[ "$DEP" == "direct:production" && "$UPD" == "version-update:semver-minor" && -n "$SEC" ]]; then
+          elif [[ "$DEP" == "direct:production" && -n "$SEC" ]]; then
             echo "result=true" >> "$GITHUB_OUTPUT"
           # development: patch and minor always
           elif [[ "$DEP" == "direct:development" && ("$UPD" == "version-update:semver-patch" || "$UPD" == "version-update:semver-minor") ]]; then
@@ -48,6 +51,4 @@ jobs:
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
-          # Use GITHUB_TOKEN if branch protection allows it; otherwise supply a
-          # PAT with repo write access as AUTO_MERGE_TOKEN.
-          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
