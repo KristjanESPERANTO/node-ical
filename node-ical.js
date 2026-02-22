@@ -432,7 +432,7 @@ function processRecurringInstance(date, event, options, baseDurationMs) {
           return null;
         }
       }
-    } else if (event.exdate[dateKey]) {
+    } else if (event.exdate[dateKey] || event.exdate[date.toISOString()]) {
       return null;
     }
   }

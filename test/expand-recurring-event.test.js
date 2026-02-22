@@ -218,6 +218,79 @@ describe('expandRecurringEvent', () => {
       assert.ok(!starts.has('2026-02-18'), 'EXDATE day (2026-02-18) should be excluded');
       assert.ok(starts.has('2026-02-17'), 'Previous day (2026-02-17) should still be included');
     });
+
+    it('should exclude timed event instance when EXDATE crosses UTC midnight due to DST offset (PST UTC-8)', () => {
+      // Weekly event at 16:00 America/Los_Angeles.
+      // After the PDT→PST switch on Nov 5 2023, 16:00 PST = 2023-11-09T00:00:00Z —
+      // the UTC date is one day ahead of the local calendar date (Nov 8 local, Nov 9 UTC).
+      //
+      // The EXDATE parser stores two keys for this entry:
+      //   "2023-11-08"               ← local calendar date via getDateKey() with Temporal
+      //   "2023-11-09T00:00:00.000Z" ← full ISO string
+      //
+      // generateDateKey() on the RRULE-generated Date (no .tz) returns "2023-11-09"
+      // (UTC date portion), which matches neither stored key without the full-ISO fallback.
+      // The fix adds `|| event.exdate[date.toISOString()]` to catch this case.
+      const ics = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Test//EXDATE DST crossing//EN',
+        'BEGIN:VTIMEZONE',
+        'TZID:America/Los_Angeles',
+        'BEGIN:DAYLIGHT',
+        'DTSTART:19700308T020000',
+        'RRULE:FREQ=YEARLY;BYDAY=2SU;BYMONTH=3',
+        'TZOFFSETFROM:-0800',
+        'TZOFFSETTO:-0700',
+        'TZNAME:PDT',
+        'END:DAYLIGHT',
+        'BEGIN:STANDARD',
+        'DTSTART:19701101T020000',
+        'RRULE:FREQ=YEARLY;BYDAY=1SU;BYMONTH=11',
+        'TZOFFSETFROM:-0700',
+        'TZOFFSETTO:-0800',
+        'TZNAME:PST',
+        'END:STANDARD',
+        'END:VTIMEZONE',
+        'BEGIN:VEVENT',
+        'UID:exdate-dst-timed-crossing@node-ical-test',
+        'SUMMARY:Weekly 4pm LA',
+        'DTSTART;TZID=America/Los_Angeles:20231025T160000',
+        'DTEND;TZID=America/Los_Angeles:20231025T170000',
+        'RRULE:FREQ=WEEKLY',
+        // Nov 8 16:00 PST = 2023-11-09T00:00:00Z (UTC date one ahead of local date)
+        'EXDATE;TZID=America/Los_Angeles:20231108T160000',
+        'END:VEVENT',
+        'END:VCALENDAR',
+      ].join('\r\n');
+
+      const events = ical.sync.parseICS(ics);
+      const event = Object.values(events).find(calEvent => calEvent.type === 'VEVENT');
+
+      assert.ok(event, 'Event should be parsed');
+      assert.ok(event.exdate, 'Event should have EXDATE');
+
+      const instances = ical.expandRecurringEvent(event, {
+        from: new Date(2023, 9, 20), // Oct 20
+        to: new Date(2023, 10, 20), // Nov 20
+        excludeExdates: true,
+      });
+
+      // The Nov 8 PST occurrence is represented in UTC as 2023-11-09T00:00:00.000Z.
+      // It must be excluded by the EXDATE.
+      const hasExcludedInstance = instances.some(instance => instance.start.toISOString() === '2023-11-09T00:00:00.000Z');
+      assert.ok(
+        !hasExcludedInstance,
+        'Instance at 2023-11-09T00:00:00Z (= Nov 8 16:00 PST) should be excluded by EXDATE',
+      );
+
+      // The adjacent occurrences should still be present.
+      const hasOct25 = instances.some(instance => instance.start.toISOString() === '2023-10-25T23:00:00.000Z');
+      assert.ok(hasOct25, 'Oct 25 16:00 PDT instance (2023-10-25T23:00:00Z) should be present');
+
+      const hasNov15 = instances.some(instance => instance.start.toISOString() === '2023-11-16T00:00:00.000Z');
+      assert.ok(hasNov15, 'Nov 15 16:00 PST instance (2023-11-16T00:00:00Z) should be present');
+    });
   });
 
   describe('RECURRENCE-ID overrides', () => {
