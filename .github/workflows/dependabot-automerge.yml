@@ -22,8 +22,9 @@ jobs:
         id: metadata
         uses: dependabot/fetch-metadata@21025c705c08248db411dc16f3619e6b5f9ea21a # v2.5.0
         with:
-          # alert-lookup requires a PAT; GITHUB_TOKEN is not accepted by the
-          # Dependabot Alerts API. AUTO_MERGE_TOKEN must have repo scope.
+          # AUTO_MERGE_TOKEN (PAT with repo scope) is required — both for
+          # alert-lookup (GITHUB_TOKEN is rejected by the Dependabot Alerts API)
+          # and for the gh pr merge step below. Without it the workflow fails.
           github-token: ${{ secrets.AUTO_MERGE_TOKEN }}
           alert-lookup: true
 
