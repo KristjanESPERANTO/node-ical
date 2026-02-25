@@ -1,6 +1,5 @@
-Gruntfile.js
-tasks
 test
+tsconfig.json
 *.tgz
 .DS_Store
 .idea
@@ -8,11 +7,7 @@ test
 .github
 .gitignore
 .gitattributes
-.npmigore
-.eslintrc.js
-.prettierrc.js
 /node_modules
 /build
 /examples
 /*.ics
-appveyor.yml
