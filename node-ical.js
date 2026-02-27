@@ -130,7 +130,7 @@ async.fromURL = function (url, options, cb) {
         return response.text();
       })
       .then(data => {
-        ical.parseICS(data, (error, ics) => {
+        ical.parseICSAsync(data, (error, ics) => {
           if (error) {
             reject(error);
             return;
@@ -162,7 +162,7 @@ async.parseFile = function (filename, cb) {
         return;
       }
 
-      ical.parseICS(data, (error, ics) => {
+      ical.parseICSAsync(data, (error, ics) => {
         if (error) {
           reject(error);
           return;
@@ -185,7 +185,7 @@ async.parseFile = function (filename, cb) {
  */
 async.parseICS = function (data, cb) {
   return promiseCallback((resolve, reject) => {
-    ical.parseICS(data, (error, ics) => {
+    ical.parseICSAsync(data, (error, ics) => {
       if (error) {
         reject(error);
         return;

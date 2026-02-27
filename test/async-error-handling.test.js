@@ -9,7 +9,7 @@
 const assert = require('node:assert/strict');
 const process = require('node:process');
 const {describe, it} = require('mocha');
-const ical = require('../node-ical.js');
+const icalCore = require('../ical.js');
 
 // Valid ICS for baseline tests
 const validICS = `BEGIN:VCALENDAR
@@ -34,10 +34,10 @@ UID:bad-event-456
 END:VEVENT
 END:VCALENDAR`;
 
-describe('parseICS async mode', function () {
+describe('parseICSAsync (ical.js core)', function () {
   describe('successful parsing', function () {
     it('should parse valid ICS via callback', function (done) {
-      ical.parseICS(validICS, (error, data) => {
+      icalCore.parseICSAsync(validICS, (error, data) => {
         assert.equal(error, null, 'Error should be null for valid ICS');
         assert.ok(data, 'Data should be returned');
 
@@ -51,9 +51,9 @@ describe('parseICS async mode', function () {
     });
 
     it('should return same result as sync mode', function (done) {
-      const syncResult = ical.parseICS(validICS);
+      const syncResult = icalCore.parseICS(validICS);
 
-      ical.parseICS(validICS, (error, asyncResult) => {
+      icalCore.parseICSAsync(validICS, (error, asyncResult) => {
         assert.equal(error, null);
 
         const syncEvents = Object.values(syncResult).filter(x => x.type === 'VEVENT');
@@ -113,7 +113,7 @@ describe('parseICS async mode', function () {
         done(new Error('BUG #144: Neither callback nor try-catch received the error'));
       };
 
-      ical.parseICS(malformedDtstartICS, (error, _data) => {
+      icalCore.parseICSAsync(malformedDtstartICS, (error, _data) => {
         if (handled || !error) {
           return;
         }
@@ -145,7 +145,7 @@ describe('parseICS async mode', function () {
         }
       };
 
-      ical.parseICS(malformedDtstartICS, (error, _data) => {
+      icalCore.parseICSAsync(malformedDtstartICS, (error, _data) => {
         if (error) {
           handleError();
         }
@@ -161,7 +161,7 @@ describe('parseICS async mode', function () {
 
   describe('edge cases', function () {
     it('should handle empty ICS string', function (done) {
-      ical.parseICS('', (error, data) => {
+      icalCore.parseICSAsync('', (error, data) => {
         assert.equal(error, null);
         assert.ok(data);
         assert.equal(Object.keys(data).length, 0);
@@ -174,7 +174,7 @@ describe('parseICS async mode', function () {
 VERSION:2.0
 END:VCALENDAR`;
 
-      ical.parseICS(minimalICS, (error, data) => {
+      icalCore.parseICSAsync(minimalICS, (error, data) => {
         assert.equal(error, null);
         assert.ok(data);
         done();
@@ -196,7 +196,7 @@ UID:event-2
 END:VEVENT
 END:VCALENDAR`;
 
-      ical.parseICS(multiEventICS, (error, data) => {
+      icalCore.parseICSAsync(multiEventICS, (error, data) => {
         assert.equal(error, null);
         const events = Object.values(data).filter(x => x.type === 'VEVENT');
         assert.equal(events.length, 2);
@@ -209,7 +209,15 @@ END:VCALENDAR`;
       // the callback would be caught and cause a double callback
       let callbackCount = 0;
 
-      ical.parseICS(validICS, () => {
+      // Catch the user callback error to prevent it from failing the test
+      const originalListeners = process.listeners('uncaughtException');
+      process.removeAllListeners('uncaughtException');
+      process.on('uncaughtException', () => {
+        // Expected - user callback threw, but we just want to verify
+        // that the callback was only invoked once
+      });
+
+      icalCore.parseICSAsync(validICS, () => {
         callbackCount++;
 
         if (callbackCount > 1) {
@@ -217,13 +225,19 @@ END:VCALENDAR`;
           return;
         }
 
-        // Throw after incrementing counter - this tests that parseICS
+        // Throw after incrementing counter - this tests that parseICSAsync
         // doesn't catch this error and call the callback again
         throw new Error('User callback error');
       });
 
       // Give it time for potential double callback
       setTimeout(() => {
+        // Restore original exception handlers
+        process.removeAllListeners('uncaughtException');
+        for (const listener of originalListeners) {
+          process.on('uncaughtException', listener);
+        }
+
         assert.equal(callbackCount, 1);
         done();
       }, 50);
@@ -231,10 +245,10 @@ END:VCALENDAR`;
   });
 });
 
-describe('parseICS sync vs async parity', function () {
+describe('parseICS sync vs async parity (ical.js core)', function () {
   it('sync mode should throw on malformed data', function () {
     assert.throws(() => {
-      ical.parseICS(malformedDtstartICS);
+      icalCore.parseICS(malformedDtstartICS);
     }, /toISOString/);
   });
 
@@ -243,7 +257,7 @@ describe('parseICS sync vs async parity', function () {
 
     let syncErrorMessage;
     try {
-      ical.parseICS(malformedDtstartICS);
+      icalCore.parseICS(malformedDtstartICS);
     } catch (error) {
       syncErrorMessage = error.message;
     }
@@ -251,7 +265,7 @@ describe('parseICS sync vs async parity', function () {
     let handled = false;
 
     try {
-      ical.parseICS(malformedDtstartICS, (error, _data) => {
+      icalCore.parseICSAsync(malformedDtstartICS, (error, _data) => {
         if (error && !handled) {
           handled = true;
           assert.ok(
@@ -293,7 +307,7 @@ describe('parseICS sync vs async parity', function () {
       );
 
       let handled = false;
-      ical.parseICS(largeICS, (error, _data) => {
+      icalCore.parseICSAsync(largeICS, (error, _data) => {
         if (handled) {
           return;
         }
