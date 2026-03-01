@@ -10,11 +10,11 @@ tz.linkAlias('Etc/Unknown', 'Etc/GMT');
 describe('parser: advanced cases', () => {
   // Recurrence and exceptions remain intact with Intl-backed date parsing
   describe('Recurrence and exceptions', () => {
-    it('handles RRULE + EXDATEs + RECURRENCE-ID override (test12.ics)', function () {
+    it('handles RRULE + EXDATEs + RECURRENCE-ID override (daily-count-exdate-recurrence-id.ics)', function () {
       // Windows CI occasionally takes longer to initialise Intl time zone data on Node 20.
       // Give this parsing-heavy regression test extra breathing room to avoid spurious timeouts.
       this.timeout(20_000);
-      const data = ical.parseFile('./test/test12.ics');
+      const data = ical.parseFile('./test/fixtures/daily-count-exdate-recurrence-id.ics');
       const event = Object.values(data).find(x => x.uid === '0000001' && x.summary === 'Treasure Hunting');
       assert.ok(event.rrule);
       assert.equal(event.summary, 'Treasure Hunting');
@@ -33,9 +33,9 @@ describe('parser: advanced cases', () => {
       assert.strictEqual(event.recurrences[dateOnlyKey], event.recurrences[fullIsoKey], 'DATE-TIME RECURRENCE-ID should be accessible by both date-only and full ISO keys');
     });
 
-    // Test13.ics – RECURRENCE-ID appears before RRULE and must still bind correctly
-    it('handles RECURRENCE-ID before RRULE (test13.ics)', () => {
-      const data = ical.parseFile('./test/test13.ics');
+    // Google-calendar-kiev-tz.ics – RECURRENCE-ID appears before RRULE and must still bind correctly
+    it('handles RECURRENCE-ID before RRULE (google-calendar-kiev-tz.ics)', () => {
+      const data = ical.parseFile('./test/fixtures/google-calendar-kiev-tz.ics');
       const event = Object.values(data).find(x => x.uid === '6m2q7kb2l02798oagemrcgm6pk@google.com' && x.summary === 'repeated');
       assert.ok(event.rrule);
       assert.equal(event.summary, 'repeated');
@@ -52,7 +52,7 @@ describe('parser: advanced cases', () => {
 
     // RECURRENCE-ID with SEQUENCE: newer versions should win over older ones (RFC 5545)
     it('applies SEQUENCE logic to RECURRENCE-ID overrides', () => {
-      const data = ical.parseFile('./test/data/recurrence-sequence.ics');
+      const data = ical.parseFile('./test/fixtures/recurrence-sequence.ics');
       const event = data['sequence-test@node-ical.test'];
 
       assert.ok(event, 'Event should exist');
@@ -89,7 +89,7 @@ describe('parser: advanced cases', () => {
 
     // Duplicate UIDs without RECURRENCE-ID: SEQUENCE determines which version wins
     it('applies SEQUENCE logic to duplicate UIDs without RECURRENCE-ID', () => {
-      const data = ical.parseFile('./test/data/duplicate-uid-sequence.ics');
+      const data = ical.parseFile('./test/fixtures/duplicate-uid-sequence.ics');
 
       // Test case 1: SEQUENCE 2 appears first, then SEQUENCE 0
       // The higher SEQUENCE (2) should be kept
@@ -111,7 +111,7 @@ describe('parser: advanced cases', () => {
     // Issue #450: RECURRENCE-ID with higher SEQUENCE appearing before base series with lower SEQUENCE
     // The base series (RRULE) should still be accepted even though it has lower SEQUENCE
     it('accepts base series (RRULE) even when RECURRENCE-ID with higher SEQUENCE comes first (issue #450)', () => {
-      const data = ical.parseFile('./test/data/google-recurrence-order.ics');
+      const data = ical.parseFile('./test/fixtures/google-recurrence-order.ics');
       const event = data['aaaaaaaaaa888se1rr0b24sm4p@google.com'];
 
       assert.ok(event, 'Event should exist');
@@ -132,7 +132,7 @@ describe('parser: advanced cases', () => {
 
     // Duplicate UIDs with RRULE: SEQUENCE logic should apply to recurring events too
     it('applies SEQUENCE logic to duplicate RRULE events', () => {
-      const data = ical.parseFile('./test/data/duplicate-rrule-sequence.ics');
+      const data = ical.parseFile('./test/fixtures/duplicate-rrule-sequence.ics');
       const event = data['rrule-sequence-test@node-ical.test'];
 
       assert.ok(event, 'Event should exist');
@@ -145,9 +145,9 @@ describe('parser: advanced cases', () => {
       assert.notEqual(event.start.getUTCHours(), 14, 'Start time should not be 14:00 (from lower SEQUENCE)');
     });
 
-    // Test14.ics – comma-separated EXDATEs plus EXDATEs with malformed times stay resilient
-    it('parses comma-separated EXDATEs (test14.ics)', () => {
-      const data = ical.parseFile('./test/test14.ics');
+    // Biweekly-exdate-until.ics – comma-separated EXDATEs plus EXDATEs with malformed times stay resilient
+    it('parses comma-separated EXDATEs (biweekly-exdate-until.ics)', () => {
+      const data = ical.parseFile('./test/fixtures/biweekly-exdate-until.ics');
       const event = Object.values(data).find(x => x.uid === '98765432-ABCD-DCBB-999A-987765432123');
       assert.equal(event.summary, 'Example of comma-separated exdates');
       assert.ok(event.exdate);
@@ -164,8 +164,8 @@ describe('parser: advanced cases', () => {
       assert.equal(event.exdate[new Date(Date.UTC(2017, 4, 5, 12)).toISOString().slice(0, 10)], undefined);
     });
 
-    it('tolerates EXDATEs with bad times (test14.ics)', () => {
-      const data = ical.parseFile('./test/test14.ics');
+    it('tolerates EXDATEs with bad times (biweekly-exdate-until.ics)', () => {
+      const data = ical.parseFile('./test/fixtures/biweekly-exdate-until.ics');
       const event = Object.values(data).find(x => x.uid === '1234567-ABCD-ABCD-ABCD-123456789012');
       assert.equal(event.summary, 'Example of exdate with bad times');
       assert.ok(event.exdate);
@@ -178,8 +178,8 @@ describe('parser: advanced cases', () => {
       }
     });
 
-    it('exdate is a plain object, not an array (test14.ics)', () => {
-      const data = ical.parseFile('./test/test14.ics');
+    it('exdate is a plain object, not an array (biweekly-exdate-until.ics)', () => {
+      const data = ical.parseFile('./test/fixtures/biweekly-exdate-until.ics');
       const event = Object.values(data).find(x => x.uid === '98765432-ABCD-DCBB-999A-987765432123');
       assert.ok(event.exdate);
 
@@ -231,7 +231,7 @@ describe('parser: advanced cases', () => {
     // Regression test for issue #167: "Exdate showing blank array when EXDATE parameters exist"
     // https://github.com/jens-maus/node-ical/issues/167
     it('exdate is not shown as blank/empty array (regression for #167)', () => {
-      const data = ical.parseFile('./test/test14.ics');
+      const data = ical.parseFile('./test/fixtures/biweekly-exdate-until.ics');
       const event = Object.values(data).find(x => x.uid === '98765432-ABCD-DCBB-999A-987765432123');
 
       // The bug was: JSON.stringify showed [] even though data existed
@@ -258,7 +258,7 @@ describe('parser: advanced cases', () => {
     // Regression test for issue #360: "Recurring events with exclusions are not handled"
     // https://github.com/jens-maus/node-ical/issues/360
     it('recurring events with EXDATE exclusions are properly parsed (regression for #360)', () => {
-      const data = ical.parseFile('./test/test14.ics');
+      const data = ical.parseFile('./test/fixtures/biweekly-exdate-until.ics');
       const event = Object.values(data).find(x => x.uid === '98765432-ABCD-DCBB-999A-987765432123');
 
       // The bug was: parseIcs ignored exceptions and created exdate: []
@@ -272,30 +272,30 @@ describe('parser: advanced cases', () => {
     });
   });
 
-  // Test15.ics – Microsoft Exchange timezone naming
+  // Exchange-custom-tz.ics – Microsoft Exchange timezone naming
   // Moved under the consolidated 'Microsoft time zones' section below to reduce nesting.
 
-  // Test16.ics – quoted parameter values survive the parameter parser rewrite
+  // windows-quoted-tz-rrule.ics – quoted parameter values survive the parameter parser rewrite
   describe('Metadata and parsing robustness', () => {
-    it('parses quoted parameter values (test16.ics)', () => {
-      const data = ical.parseFile('./test/test16.ics');
+    it('parses quoted parameter values (windows-quoted-tz-rrule.ics)', () => {
+      const data = ical.parseFile('./test/fixtures/windows-quoted-tz-rrule.ics');
       const event = Object.values(data)[0];
       assert.ok(event.start.tz);
     });
 
-    // Test17.ics – start/end should surface as Date objects, not serialized strings
-    it('produces Date objects (non-strings) (test17.ics)', () => {
-      const data = ical.parseFile('./test/test17.ics');
+    // Sabredav-school-holidays.ics – start/end should surface as Date objects, not serialized strings
+    it('produces Date objects (non-strings) (sabredav-school-holidays.ics)', () => {
+      const data = ical.parseFile('./test/fixtures/sabredav-school-holidays.ics');
       const event = Object.values(data)[0];
       assert.notEqual(typeof event.start, 'string');
       assert.notEqual(typeof event.end, 'string');
     });
   });
 
-  // Test18.ics – timezone detection scenarios exercise resolveTZID fallbacks
+  // Mixed-timezone-handling.ics – timezone detection scenarios exercise resolveTZID fallbacks
   describe('Timezone detection', () => {
-    it('infers/retains timezone per event (test18.ics)', () => {
-      const data = ical.parseFile('./test/test18.ics');
+    it('infers/retains timezone per event (mixed-timezone-handling.ics)', () => {
+      const data = ical.parseFile('./test/fixtures/mixed-timezone-handling.ics');
       const events = Object.values(data).filter(x => x.type === 'VEVENT');
       assert.equal(events.length, 5);
       const uids = ['1C9439B1-FF65-11D6-9973-003065F99D04', '2C9439B1-FF65-11D6-9973-003065F99D04', '3C9439B1-FF65-11D6-9973-003065F99D04', '4C9439B1-FF65-11D6-9973-003065F99D04', '5C9439B1-FF65-11D6-9973-003065F99D04'];
@@ -334,18 +334,18 @@ END:VCALENDAR`;
     });
   });
 
-  // Test19.ics – organizer params must propagate untouched
+  // Event-organizer-cn.ics – organizer params must propagate untouched
   describe('Organizer and status', () => {
-    it('preserves organizer params (test19.ics)', () => {
-      const data = ical.parseFile('./test/test19.ics');
+    it('preserves organizer params (event-organizer-cn.ics)', () => {
+      const data = ical.parseFile('./test/fixtures/event-organizer-cn.ics');
       const event = Object.values(data)[0];
       assert.equal(event.organizer.params.CN, 'stomlinson@mozilla.com');
       assert.equal(event.organizer.val, 'mailto:stomlinson@mozilla.com');
     });
 
-    // Test20.ics – VEVENT status values remain intact across parsing
-    it('parses VEVENT status values (test20.ics)', () => {
-      const data = ical.parseFile('./test/test20.ics');
+    // Tentative-apple-calendar.ics – VEVENT status values remain intact across parsing
+    it('parses VEVENT status values (tentative-apple-calendar.ics)', () => {
+      const data = ical.parseFile('./test/fixtures/tentative-apple-calendar.ics');
       const getByUid = uid => Object.values(data).find(x => x.uid === uid);
       assert.equal(getByUid('31a1ffc9-9b76-465b-ae4a-cadb694c9d37').status, 'TENTATIVE');
       assert.equal(getByUid('F00F3710-BF4D-46D3-9A2C-1037AB24C6AC').status, 'CONFIRMED');
@@ -354,20 +354,20 @@ END:VCALENDAR`;
     });
   });
 
-  // Test21.ics – VTIMEZONE entries apply to floating DTSTART values with Intl helpers
+  // Dst-transition-rules.ics – VTIMEZONE entries apply to floating DTSTART values with Intl helpers
   describe('Floating DTSTART with VTIMEZONE', () => {
-    it('applies VTIMEZONE to floating DTSTART (test21.ics)', () => {
-      const data = ical.parseFile('./test/test21.ics');
+    it('applies VTIMEZONE to floating DTSTART (dst-transition-rules.ics)', () => {
+      const data = ical.parseFile('./test/fixtures/dst-transition-rules.ics');
       const event = Object.values(data).find(x => x.uid === 'f683404f-aede-43eb-8774-27f62bb27c92');
       assert.equal(event.start.toJSON(), '2022-10-09T08:00:00.000Z');
       assert.equal(event.end.toJSON(), '2022-10-09T09:00:00.000Z');
     });
   });
 
-  // Test22.ics – quoted attendee parameters + X-RESPONSE-COMMENT retain metadata
+  // Attendee-with-url.ics – quoted attendee parameters + X-RESPONSE-COMMENT retain metadata
   describe('Attendee params', () => {
-    it('parses attendee params incl. X-RESPONSE-COMMENT (test22.ics)', () => {
-      const data = ical.parseFile('./test/test22.ics');
+    it('parses attendee params incl. X-RESPONSE-COMMENT (attendee-with-url.ics)', () => {
+      const data = ical.parseFile('./test/fixtures/attendee-with-url.ics');
       const event = Object.values(data)[0];
       assert.equal(event.attendee.params['X-RESPONSE-COMMENT'], 'Test link: https://example.com/test');
       assert.equal(event.attendee.params.CUTYPE, 'INDIVIDUAL');
@@ -375,10 +375,10 @@ END:VCALENDAR`;
     });
   });
 
-  // Test23.ics – RRULE with timezone DTSTART carries tzid through rrule options
+  // Yearly-party.ics – RRULE with timezone DTSTART carries tzid through rrule options
   describe('RRULE with timezone DTSTART', () => {
-    it('handles RRULE with timezone DTSTART (test23.ics)', () => {
-      const data = ical.parseFile('./test/test23.ics');
+    it('handles RRULE with timezone DTSTART (yearly-party.ics)', () => {
+      const data = ical.parseFile('./test/fixtures/yearly-party.ics');
       const first = Object.values(data).find(x => x.uid === '000021a');
       assert.equal(first.datetype, 'date-time');
       assert.equal(first.start.tz, 'Europe/Berlin');
@@ -399,7 +399,7 @@ END:VCALENDAR`;
       // Regression test: when building the RRULE string internally, node-ical must
       // filter out orphaned segments (like TZID=...) that result from splitting
       // DTSTART;TZID=... on semicolons. The output should have clean RFC5545 format.
-      const data = ical.parseFile('./test/test23.ics');
+      const data = ical.parseFile('./test/fixtures/yearly-party.ics');
       const first = Object.values(data).find(x => x.uid === '000021a');
 
       // RRULE must be successfully parsed (would fail if string was malformed)
@@ -415,15 +415,15 @@ END:VCALENDAR`;
 
   // Ms_timezones.ics – Microsoft Windows zone mapping and custom tz handling flow through tz-utils
   describe('Microsoft time zones', () => {
-    it('maps Exchange tz to IANA (test15.ics)', () => {
-      const data = ical.parseFile('./test/test15.ics');
+    it('maps Exchange tz to IANA (exchange-custom-tz.ics)', () => {
+      const data = ical.parseFile('./test/fixtures/exchange-custom-tz.ics');
       const event = Object.values(data).find(x => x.uid === '040000008200E00074C5B7101A82E00800000000C9AB6E5A6AFED401000000000000000010000000C55132227F0F0948A7D58F6190A3AEF9');
       assert.equal(event.start.tz, 'Asia/Bangkok');
       assert.equal(event.end.tz, 'Asia/Bangkok');
     });
     describe('Windows mapping and custom tz', () => {
       it('maps Windows zones to times (ms_timezones.ics)', () => {
-        const data = ical.parseFile('./test/ms_timezones.ics');
+        const data = ical.parseFile('./test/fixtures/ms_timezones.ics');
         const event = Object.values(data).find(x => x.summary === 'Log Yesterday\'s Jira time');
         assert.strictEqual(event.start.getUTCFullYear(), 2020);
         assert.strictEqual(event.start.getUTCMonth(), 5);
@@ -433,43 +433,43 @@ END:VCALENDAR`;
 
       // Bad_ms_tz.ics – unexpected ms timezone (should not use Customized Time Zone)
       it('ignores "Customized Time Zone" (bad_ms_tz.ics)', () => {
-        const data = ical.parseFile('./test/bad_ms_tz.ics');
+        const data = ical.parseFile('./test/fixtures/bad_ms_tz.ics');
         const event = Object.values(data).find(x => x.summary === '[private]');
         assert.notEqual(event.start.tz, 'Customized Time Zone');
       });
 
       it('rejects invalid custom tz (bad_custom_ms_tz2.ics)', () => {
-        const data = ical.parseFile('./test/bad_custom_ms_tz2.ics');
+        const data = ical.parseFile('./test/fixtures/bad_custom_ms_tz2.ics');
         const event = Object.values(data).find(x => x.summary === '[private]');
         assert.notEqual(event.start.tz, 'Customized Time Zone 1');
       });
 
       it('applies old MS tz before DST (Office-2012-owa.ics)', () => {
-        const data = ical.parseFile('./test/Office-2012-owa.ics');
+        const data = ical.parseFile('./test/fixtures/Office-2012-owa.ics');
         const event = Object.values(data).find(x => x.summary === ' TEST');
         assert.equal(event.end.toISOString().slice(0, 10), new Date(Date.UTC(2020, 9, 28, 15, 0, 0)).toISOString().slice(0, 10));
       });
 
       it('applies old MS tz after DST (Office-2012-owa.ics)', () => {
-        const data = ical.parseFile('./test/Office-2012-owa.ics');
+        const data = ical.parseFile('./test/fixtures/Office-2012-owa.ics');
         const event = Object.values(data).find(x => x.summary === ' TEST 3');
         assert.equal(event.end.toISOString().slice(0, 10), new Date(Date.UTC(2020, 10, 2, 20, 0, 0)).toISOString().slice(0, 10));
       });
 
       it('handles custom tz recurrence (bad_custom_ms_tz.ics)', () => {
-        const data = ical.parseFile('./test/bad_custom_ms_tz.ics');
+        const data = ical.parseFile('./test/fixtures/bad_custom_ms_tz.ics');
         const event = Object.values(data).find(x => x.summary === '[private]');
         assert.equal(event.start.toISOString().slice(0, 10), new Date(Date.UTC(2021, 2, 25, 10, 35, 0)).toISOString().slice(0, 10));
       });
 
       it('uses start as end when missing (bad_custom_ms_tz.ics)', () => {
-        const data = ical.parseFile('./test/bad_custom_ms_tz.ics');
+        const data = ical.parseFile('./test/fixtures/bad_custom_ms_tz.ics');
         const event = Object.values(data).find(x => x.summary === '*masked-away*');
         assert.equal(event.end.toISOString().slice(0, 10), event.start.toISOString().slice(0, 10));
       });
 
       it('handles negative duration (bad_custom_ms_tz.ics)', () => {
-        const data = ical.parseFile('./test/bad_custom_ms_tz.ics');
+        const data = ical.parseFile('./test/fixtures/bad_custom_ms_tz.ics');
         const event = Object.values(data).find(x => x.summary === '*masked-away2*');
         assert.equal(event.end.toISOString().slice(0, 10), new Date(Date.UTC(2021, 2, 23, 21, 56, 56)).toISOString().slice(0, 10));
       });
@@ -479,7 +479,7 @@ END:VCALENDAR`;
   // BadRRULE.ics – invalid date still keeps time portion
   describe('Invalid RRULE handling', () => {
     it('retains start time on invalid RRULE date (badRRULE.ics)', () => {
-      const data = ical.parseFile('./test/badRRULE.ics');
+      const data = ical.parseFile('./test/fixtures/badRRULE.ics');
       const event = Object.values(data).find(x => x.summary === 'Academic Time');
       assert.equal(event.start.toISOString().slice(11), '15:50:00.000Z');
     });
@@ -488,7 +488,7 @@ END:VCALENDAR`;
   // Test_with_forward_TZ.ics – full day forward of UTC
   describe('Forward TZ behavior', () => {
     it('preserves midnight in forward TZ (test_with_forward_TZ.ics)', () => {
-      const data = ical.parseFile('./test/test_with_forward_TZ.ics');
+      const data = ical.parseFile('./test/fixtures/test_with_forward_TZ.ics');
       const event = Object.values(data).find(x => x.summary === 'Fear TWD');
       assert.equal(event.datetype, 'date');
       // Date-only event must preserve its calendar-day boundaries
@@ -517,14 +517,14 @@ END:VCALENDAR`;
   // Test_with_tz_list.ics – tzid list selects correct tz
   describe('Timezone lists', () => {
     it('selects first valid tz from list (test_with_tz_list.ics)', () => {
-      const data = ical.parseFile('./test/test_with_tz_list.ics');
+      const data = ical.parseFile('./test/fixtures/test_with_tz_list.ics');
       const event = Object.values(data).find(x => x.uid === 'E689AEB8C02C4E2CADD8C7D3D303CEAD0');
       assert.equal(event.start.tz, 'Europe/Berlin');
     });
 
     // Test_with_multiple_tzids_in_vtimezone.ics – select correct tz across multiple components
     it('chooses correct tz across components (test_with_multiple_tzids_in_vtimezone.ics)', () => {
-      const data = ical.parseFile('./test/test_with_multiple_tzids_in_vtimezone.ics');
+      const data = ical.parseFile('./test/fixtures/test_with_multiple_tzids_in_vtimezone.ics');
       const event = Object.values(data).find(x => x.uid === '1891-1709856000-1709942399@www.washougal.k12.wa.us');
       assert.equal(event.start.toJSON(), '2024-06-27T07:00:00.000Z');
       assert.equal(event.end.toJSON(), '2024-06-28T06:00:00.000Z');
@@ -534,7 +534,7 @@ END:VCALENDAR`;
   // Test_date_time_duration.ics – duration with date-time DTSTART
   describe('Durations', () => {
     it('applies DURATION to datetime DTSTART (test_date_time_duration.ics)', () => {
-      const data = ical.parseFile('./test/test_date_time_duration.ics');
+      const data = ical.parseFile('./test/fixtures/test_date_time_duration.ics');
       const event = Object.values(data).find(x => x.summary === 'period test2');
       assert.equal(event.start.toJSON(), '2024-02-15T09:00:00.000Z');
       assert.equal(event.end.toJSON(), '2024-02-15T10:15:00.000Z');
@@ -542,7 +542,7 @@ END:VCALENDAR`;
 
     // Test_date_duration.ics – duration with date DTSTART
     it('applies DURATION to date DTSTART (test_date_duration.ics)', () => {
-      const data = ical.parseFile('./test/test_date_duration.ics');
+      const data = ical.parseFile('./test/fixtures/test_date_duration.ics');
       const event = Object.values(data).find(x => x.summary === 'period test2');
       assert.equal(event.start.toDateString(), new Date(2024, 1, 15).toDateString());
       assert.equal(event.end.toDateString(), new Date(2024, 1, 22).toDateString());
@@ -723,7 +723,7 @@ END:VCALENDAR`;
   // Test_with_int_tzid.ics – integer-like tzid preserved
   describe('TZID preservation', () => {
     it('preserves integer-like TZID (test_with_int_tzid.ics)', () => {
-      const data = ical.parseFile('./test/test_with_int_tzid.ics');
+      const data = ical.parseFile('./test/fixtures/test_with_int_tzid.ics');
       const event = Object.values(data)[0];
       assert.equal(event.summary, 'test export import');
     });
@@ -732,14 +732,14 @@ END:VCALENDAR`;
   // Germany_at_end_of_day_repeating.ics – moved recurrence across DST
   describe('DST and recurrence edge cases', () => {
     it('keeps end-of-day recurrence across DST (germany_at_end_of_day_repeating.ics)', () => {
-      const data = ical.parseFile('./test/germany_at_end_of_day_repeating.ics');
+      const data = ical.parseFile('./test/fixtures/germany_at_end_of_day_repeating.ics');
       const event = Object.values(data).find(x => x.uid === '2m6mt1p89l2anl74915ur3hsgm@google.com');
       assert.equal(event.start.toDateString(), new Date(2024, 9, 22, 23, 0, 0).toDateString());
     });
 
     // Whole_day_moved_over_dst_change_berlin.ics – recurrence shift over DST
     it('keeps whole-day recurrence across DST (whole_day_moved_over_dst_change_berlin.ics)', () => {
-      const data = ical.parseFile('./test/whole_day_moved_over_dst_change_berlin.ics');
+      const data = ical.parseFile('./test/fixtures/whole_day_moved_over_dst_change_berlin.ics');
       const moved = Object.values(data).find(x => x.uid === '14nv8jl8d6dvdbl477lod4fftf@google.com');
       assert.ok(moved && moved.recurrences, 'Missing recurrence map');
       // Find the expected recurrence by local calendar date rather than by map key
