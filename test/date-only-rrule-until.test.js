@@ -1,11 +1,9 @@
-/* eslint-disable prefer-arrow-callback */
-
 const assert = require('node:assert/strict');
 const {describe, it} = require('mocha');
 const ical = require('../node-ical.js');
 
-describe('DATE-only RRULE with UNTIL (regression test for Google Calendar birthday events)', function () {
-  it('should parse DATE-only events with yearly RRULE and UNTIL in the past', function () {
+describe('DATE-only RRULE with UNTIL (regression test for Google Calendar birthday events)', () => {
+  it('should parse DATE-only events with yearly RRULE and UNTIL in the past', () => {
     // This is the exact format that Google Calendar uses for birthday events
     // that caused the bug report in MagicMirror PR #4016
     const icsData = `BEGIN:VCALENDAR
@@ -55,7 +53,7 @@ END:VCALENDAR`;
     assert.strictEqual(lastDate.getUTCDate(), 13);
   });
 
-  it('should preserve VALUE=DATE in DTSTART when creating RRULE string', function () {
+  it('should preserve VALUE=DATE in DTSTART when creating RRULE string', () => {
     const icsData = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Test//Test//EN
@@ -84,7 +82,7 @@ END:VCALENDAR`;
     assert.strictEqual(recurrences.length, 12, 'Should have 12 monthly occurrences');
   });
 
-  it('should handle DATE-only RRULE without UNTIL', function () {
+  it('should handle DATE-only RRULE without UNTIL', () => {
     const icsData = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Test//Test//EN
@@ -108,7 +106,7 @@ END:VCALENDAR`;
     assert.strictEqual(recurrences.length, 5, 'Should have 5 occurrences');
   });
 
-  it('should use consistent date extraction for DATE-only events', function () {
+  it('should use consistent date extraction for DATE-only events', () => {
     // This test ensures that DTSTART construction uses the same pattern as getDateKey
     // Both should use local getters (getFullYear, getMonth, getDate) because
     // dateParameter creates DATE-only dates with new Date(year, month, day).
@@ -152,7 +150,7 @@ END:VCALENDAR`;
     assert.strictEqual(recurrences.length, 3, 'Should have 3 occurrences');
   });
 
-  it('should normalize VALUE=DATE RRULE start to midnight regardless of server timezone', function () {
+  it('should normalize VALUE=DATE RRULE start to midnight regardless of server timezone', () => {
     // Regression test: the old getTimezoneOffset()-based code shifted the time by the
     // server's UTC offset on machines east of UTC (e.g. UTC+2 produced 02:00:00 instead
     // of 00:00:00 for a DATE-only event). This was invisible on UTC servers (CI) and only

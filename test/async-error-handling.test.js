@@ -4,7 +4,6 @@
  * Related to Issue #144: Uncatchable exception in async mode
  * @see https://github.com/jens-maus/node-ical/issues/144
  */
-/* eslint-disable prefer-arrow-callback, max-nested-callbacks */
 
 const assert = require('node:assert/strict');
 const process = require('node:process');
@@ -34,40 +33,32 @@ UID:bad-event-456
 END:VEVENT
 END:VCALENDAR`;
 
-describe('parseICS async mode', function () {
-  describe('successful parsing', function () {
-    it('should parse valid ICS via callback', function (done) {
-      ical.parseICS(validICS, (error, data) => {
-        assert.equal(error, null, 'Error should be null for valid ICS');
-        assert.ok(data, 'Data should be returned');
+describe('parseICS async mode', () => {
+  describe('successful parsing', () => {
+    it('should parse valid ICS via callback', async () => {
+      const data = await ical.async.parseICS(validICS);
 
-        const events = Object.values(data).filter(x => x.type === 'VEVENT');
-        assert.equal(events.length, 1);
-        assert.equal(events[0].summary, 'Valid Event');
-        assert.equal(events[0].uid, 'valid-event-123');
+      assert.ok(data, 'Data should be returned');
 
-        done();
-      });
+      const events = Object.values(data).filter(x => x.type === 'VEVENT');
+      assert.equal(events.length, 1);
+      assert.equal(events[0].summary, 'Valid Event');
+      assert.equal(events[0].uid, 'valid-event-123');
     });
 
-    it('should return same result as sync mode', function (done) {
+    it('should return same result as sync mode', async () => {
       const syncResult = ical.parseICS(validICS);
+      const asyncResult = await ical.async.parseICS(validICS);
 
-      ical.parseICS(validICS, (error, asyncResult) => {
-        assert.equal(error, null);
-
-        const syncEvents = Object.values(syncResult).filter(x => x.type === 'VEVENT');
-        const asyncEvents = Object.values(asyncResult).filter(x => x.type === 'VEVENT');
-        assert.equal(syncEvents.length, asyncEvents.length);
-        assert.equal(syncEvents[0].summary, asyncEvents[0].summary);
-        assert.equal(syncEvents[0].uid, asyncEvents[0].uid);
-
-        done();
-      });
+      const syncEvents = Object.values(syncResult).filter(x => x.type === 'VEVENT');
+      const asyncEvents = Object.values(asyncResult).filter(x => x.type === 'VEVENT');
+      assert.equal(syncEvents.length, asyncEvents.length);
+      assert.equal(syncEvents[0].summary, asyncEvents[0].summary);
+      assert.equal(syncEvents[0].uid, asyncEvents[0].uid);
     });
   });
 
-  describe('error handling - Issue #144', function () {
+  describe('error handling - Issue #144', () => {
     /**
      * CURRENT BEHAVIOR (BUG):
      * Errors in setImmediate are not catchable via callback.
@@ -159,8 +150,8 @@ describe('parseICS async mode', function () {
     });
   });
 
-  describe('edge cases', function () {
-    it('should handle empty ICS string', function (done) {
+  describe('edge cases', () => {
+    it('should handle empty ICS string', done => {
       ical.parseICS('', (error, data) => {
         assert.equal(error, null);
         assert.ok(data);
@@ -169,7 +160,7 @@ describe('parseICS async mode', function () {
       });
     });
 
-    it('should handle ICS with only VCALENDAR wrapper', function (done) {
+    it('should handle ICS with only VCALENDAR wrapper', done => {
       const minimalICS = `BEGIN:VCALENDAR
 VERSION:2.0
 END:VCALENDAR`;
@@ -181,7 +172,7 @@ END:VCALENDAR`;
       });
     });
 
-    it('should handle multiple events', function (done) {
+    it('should handle multiple events', done => {
       const multiEventICS = `BEGIN:VCALENDAR
 VERSION:2.0
 BEGIN:VEVENT
@@ -204,7 +195,7 @@ END:VCALENDAR`;
       });
     });
 
-    it('should call callback only once even if it throws', function (done) {
+    it('should call callback only once even if it throws', done => {
       // Regression test: if callback is inside try-catch, an error thrown by
       // the callback would be caught and cause a double callback
       let callbackCount = 0;
@@ -231,8 +222,8 @@ END:VCALENDAR`;
   });
 });
 
-describe('parseICS sync vs async parity', function () {
-  it('sync mode should throw on malformed data', function () {
+describe('parseICS sync vs async parity', () => {
+  it('sync mode should throw on malformed data', () => {
     assert.throws(() => {
       ical.parseICS(malformedDtstartICS);
     }, /toISOString/);
@@ -276,7 +267,7 @@ describe('parseICS sync vs async parity', function () {
     }, 2000);
   });
 
-  describe('Bug #144 reproduction - error after first setImmediate batch', function () {
+  describe('Bug #144 reproduction - error after first setImmediate batch', () => {
     it('should catch errors occurring after 2000+ lines (Issue #144)', function (done) {
       // This test uses a large ICS file (2410+ lines) with a duplicate DTSTART at the end
       // The error occurs AFTER the first setImmediate batch (limit=2000)
