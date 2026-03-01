@@ -19,15 +19,21 @@ npm install node-ical
 The API has now been broken into three sections:
  - [sync](#sync)
  - [async](#async)
- - [autodetect](#autodetect)
+ - [autodetect](#autodetect) (legacy)
 
 `sync` provides synchronous API functions.
 These are easy to use but can block the event loop and are not recommended for applications that need to serve content or handle events.
 
 `async` provides proper asynchronous support for iCal parsing.
-All functions will either return a promise for `async/await` or use a callback if one is provided.
+All functions return a Promise for `async/await` use.
 
-`autodetect` provides a mix of both for backwards compatibility with older node-ical applications.
+The top-level `parseICSAsync()` is the recommended way to parse iCal strings asynchronously:
+```javascript
+const data = await ical.parseICSAsync(str);
+```
+
+`autodetect` provides a mix of both for backwards compatibility.
+Calling `parseICS(str, callback)` with a callback still works but emits a deprecation warning — use `parseICSAsync()` instead.
 
 All API functions are documented using JSDoc in the [node-ical.js](node-ical.js) file.
 This allows for IDE hinting!
@@ -104,6 +110,18 @@ UID:7014-1567468800-1567555199@peterbraden@peterbraden.co.uk
 END:VEVENT
 END:VCALENDAR
     `);
+
+    // or use the top-level parseICSAsync (same thing, shorter path)
+    const moreEvents = await ical.parseICSAsync(`
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:Another event
+DTSTART:20240101T120000Z
+UID:example-uid-123
+END:VEVENT
+END:VCALENDAR
+    `);
 })()
     .catch(console.error.bind());
 
@@ -151,8 +169,8 @@ try {
 ```
 
 ### autodetect
-These are the old API examples, which still work and will be converted to the new API automatically.
-Functions with callbacks provided will also have better performance over the older versions even if they use the old API.
+These are the old API examples which still work but are **deprecated for callback usage**.
+Calling `parseICS(str, callback)` now emits a deprecation warning. Use `parseICSAsync()` instead.
 
 Parses a string with ICS content in sync. This can block the event loop on big files.
 ```javascript
@@ -160,7 +178,15 @@ const ical = require('node-ical');
 ical.parseICS(str);
 ```
 
-Parses a string with ICS content in async to prevent the event loop from being blocked.
+Parses a string with ICS content asynchronously (**preferred**):
+```javascript
+const ical = require('node-ical');
+const data = await ical.parseICSAsync(str);
+```
+
+<details>
+<summary>Legacy callback style (deprecated)</summary>
+
 ```javascript
 const ical = require('node-ical');
 ical.parseICS(str, function(err, data) {
@@ -168,6 +194,7 @@ ical.parseICS(str, function(err, data) {
     console.log(data);
 });
 ```
+</details>
 
 Parses a string with an ICS file in sync. This can block the event loop on big files.
 ```javascript

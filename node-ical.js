@@ -1,4 +1,5 @@
 const fs = require('node:fs');
+const process = require('node:process');
 const ical = require('./ical.js');
 const {getDateKey} = require('./lib/date-utils.js');
 
@@ -60,35 +61,49 @@ const {getDateKey} = require('./lib/date-utils.js');
  * @typedef {(Promise.<iCalData>|undefined)} optionalPromise
  */
 
-// utility to allow callbacks to be used for promises
+/**
+ * Emit a one-time deprecation warning.
+ * @param {string} code - Unique warning code
+ * @param {string} message - Warning message
+ */
+function emitDeprecation(code, message) {
+  process.emitWarning(message, {type: 'DeprecationWarning', code});
+}
+
+/**
+ * Wrap a Promise-returning function so it optionally calls a Node-style callback.
+ * Internal helper — will be removed when the public callback API is dropped.
+ * @param {Function} fn - Zero-argument function returning a Promise
+ * @param {Function} [cb] - Optional callback
+ * @returns {Promise|undefined}
+ */
 function promiseCallback(fn, cb) {
-  const promise = new Promise(fn);
+  const promise = fn();
   if (!cb) {
     return promise;
   }
 
-  // Store result/error outside .then/.catch to avoid double-callback
-  // if the user's callback throws (the thrown error would be caught by
-  // the promise chain and trigger .catch, calling cb a second time)
-  let callbackError = null;
-  let callbackResult = null;
-  let hasResult = false;
+  // Store result/error before invoking cb to avoid double-callback:
+  // if cb itself throws, we are no longer inside the promise chain so
+  // the error cannot accidentally trigger a second cb call.
+  (async () => {
+    let callbackError;
+    let callbackResult;
+    let hasResult = false;
 
-  promise
-    .then(returnValue => {
-      callbackResult = returnValue;
+    try {
+      callbackResult = await promise;
       hasResult = true;
-    })
-    .catch(error => {
+    } catch (error) {
       callbackError = error;
-    })
-    .finally(() => {
-      if (callbackError) {
-        cb(callbackError, null);
-      } else if (hasResult) {
-        cb(null, callbackResult);
-      }
-    });
+    }
+
+    if (callbackError) {
+      cb(callbackError, null);
+    } else if (hasResult) {
+      cb(null, callbackResult);
+    }
+  })();
 }
 
 // Sync functions
@@ -97,6 +112,26 @@ const sync = {};
 const async = {};
 // Auto-detect functions for backwards compatibility.
 const autodetect = {};
+
+/**
+ * Parse iCal data from a string asynchronously.
+ * Returns a Promise. Uses batched parsing to avoid blocking the event loop.
+ *
+ * @param {string} data - String containing iCal data.
+ * @returns {Promise.<iCalData>} Parsed iCal data.
+ */
+async.parseICSAsync = function (data) {
+  return new Promise((resolve, reject) => {
+    ical.parseICSAsync(data, (error, ics) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(ics);
+    });
+  });
+};
 
 /**
  * Download an iCal file from the web and parse it.
@@ -117,31 +152,16 @@ async.fromURL = function (url, options, cb) {
     options = undefined;
   }
 
-  return promiseCallback((resolve, reject) => {
-    const fetchOptions = (options && typeof options === 'object') ? {...options} : {};
+  const fetchOptions = (options && typeof options === 'object') ? {...options} : {};
 
-    fetch(url, fetchOptions)
-      .then(response => {
-        if (!response.ok) {
-          // Mimic previous error style
-          throw new Error(`${response.status} ${response.statusText}`);
-        }
+  return promiseCallback(async () => {
+    const response = await fetch(url, fetchOptions);
+    if (!response.ok) {
+      // Mimic previous error style
+      throw new Error(`${response.status} ${response.statusText}`);
+    }
 
-        return response.text();
-      })
-      .then(data => {
-        ical.parseICS(data, (error, ics) => {
-          if (error) {
-            reject(error);
-            return;
-          }
-
-          resolve(ics);
-        });
-      })
-      .catch(error => {
-        reject(error);
-      });
+    return async.parseICSAsync(await response.text());
   }, cb);
 };
 
@@ -155,23 +175,10 @@ async.fromURL = function (url, options, cb) {
  * @returns {optionalPromise} Promise is returned if no callback is passed.
  */
 async.parseFile = function (filename, cb) {
-  return promiseCallback((resolve, reject) => {
-    fs.readFile(filename, 'utf8', (error, data) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-
-      ical.parseICS(data, (error, ics) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-
-        resolve(ics);
-      });
-    });
-  }, cb);
+  return promiseCallback(
+    async () => async.parseICSAsync(await fs.promises.readFile(filename, 'utf8')),
+    cb,
+  );
 };
 
 /**
@@ -180,20 +187,12 @@ async.parseFile = function (filename, cb) {
  * @param {string} data       - String containing iCal data.
  * @param {icsCallback} [cb]  - Callback function.
  *                              If no callback is provided a promise will be returned.
+ * @deprecated Use parseICSAsync() instead. Callback support will be removed in a future version.
  *
  * @returns {optionalPromise} Promise is returned if no callback is passed.
  */
 async.parseICS = function (data, cb) {
-  return promiseCallback((resolve, reject) => {
-    ical.parseICS(data, (error, ics) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-
-      resolve(ics);
-    });
-  }, cb);
+  return promiseCallback(() => async.parseICSAsync(data), cb);
 };
 
 /**
@@ -250,6 +249,10 @@ autodetect.parseICS = function (data, cb) {
     return sync.parseICS(data);
   }
 
+  emitDeprecation(
+    'NODE-ICAL-CALLBACK',
+    'parseICS(data, callback) is deprecated. Use parseICSAsync(data) instead.',
+  );
   async.parseICS(data, cb);
 };
 
@@ -579,6 +582,7 @@ module.exports = {
   fromURL: async.fromURL,
   parseFile: autodetect.parseFile,
   parseICS: autodetect.parseICS,
+  parseICSAsync: async.parseICSAsync,
   // Sync
   sync,
   // Async

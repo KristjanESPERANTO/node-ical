@@ -1,6 +1,4 @@
 /* eslint-env mocha */
-/* eslint-disable prefer-arrow-callback */
-
 const assert = require('node:assert/strict');
 const {describe, it} = require('mocha');
 const ical = require('../node-ical.js');
@@ -15,8 +13,8 @@ const ical = require('../node-ical.js');
  * Since rrule-temporal 1.4.6, this normalization is handled upstream by the library.
  * These tests verify that the library correctly interprets UNTIL in the event's timezone.
  */
-describe('Google Calendar UNTIL format bug (regression test for #435 and rrule-temporal #104)', function () {
-  it('should parse DATE-TIME event with TZID when UNTIL has no time component', function () {
+describe('Google Calendar UNTIL format bug (regression test for #435 and rrule-temporal #104)', () => {
+  it('should parse DATE-TIME event with TZID when UNTIL has no time component', () => {
     // Google Calendar sometimes produces RRULE with UNTIL that has no time part
     // even though DTSTART is a DATE-TIME with TZID
     // Example: DTSTART;TZID=Europe/Oslo:20211216T180000
@@ -62,7 +60,7 @@ END:VCALENDAR`;
     assert.strictEqual(firstDate.getUTCDate(), 16);
   });
 
-  it('should parse DATE-TIME event with UTC when UNTIL has no time component', function () {
+  it('should parse DATE-TIME event with UTC when UNTIL has no time component', () => {
     // Google Calendar can also produce this with UTC times
     // Example: DTSTART:20110106T000000Z
     //          RRULE:FREQ=YEARLY;WKST=MO;UNTIL=20361231;BYMONTHDAY=6;BYMONTH=1
@@ -113,7 +111,7 @@ END:VCALENDAR`;
     assert.strictEqual(lastDate.getUTCDate(), 6);
   });
 
-  it('should correctly interpret UNTIL in event timezone (Pacific/Auckland edge case)', function () {
+  it('should correctly interpret UNTIL in event timezone (Pacific/Auckland edge case)', () => {
     // Critical edge case: Pacific/Auckland is UTC+13 in summer
     // If we naively use T235959Z (UTC), events on the next day in Auckland could be included
     //
@@ -160,7 +158,7 @@ END:VCALENDAR`;
     assert.strictEqual(dates[1].getUTCHours(), 21);
   });
 
-  it('should handle UNTIL without time for daily events spanning multiple days', function () {
+  it('should handle UNTIL without time for daily events spanning multiple days', () => {
     // Simple case: daily event from Jan 1-3
     const icsData = `BEGIN:VCALENDAR
 VERSION:2.0
@@ -191,7 +189,7 @@ END:VCALENDAR`;
     assert.deepStrictEqual(dates, [1, 2, 3], 'Should be Jan 1, 2, 3');
   });
 
-  it('should handle UNTIL without time for Europe/Berlin timezone', function () {
+  it('should handle UNTIL without time for Europe/Berlin timezone', () => {
     // Europe/Berlin is UTC+1 in winter, UTC+2 in summer
     // Event at 22:00 Berlin time on Jan 15
     const icsData = `BEGIN:VCALENDAR

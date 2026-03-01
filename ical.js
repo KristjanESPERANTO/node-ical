@@ -1077,38 +1077,36 @@ module.exports = {
   },
 
   /**
-   * Parse an iCalendar string.
+   * Parse an iCalendar string synchronously.
    *
    * @param {string} string - Raw iCalendar data (ICS format)
-   * @param {Function} [cb] - Optional callback for async mode: cb(error, data)
-   * @returns {Object|undefined} Parsed calendar data (sync) or undefined (async)
+   * @returns {Object} Parsed calendar data
    *
    * @example
-   * // Synchronous parsing
    * const data = ical.parseICS(icsString);
+   */
+  parseICS(string) {
+    const lines = string.split(/\r?\n/);
+    return this.parseLines(lines);
+  },
+
+  /**
+   * Parse an iCalendar string asynchronously with batching.
+   * Processes lines in batches to prevent blocking the event loop for large files.
+   *
+   * @param {string} string - Raw iCalendar data (ICS format)
+   * @param {Function} cb - Callback: cb(error, data)
    *
    * @example
-   * // Asynchronous parsing with callback
-   * ical.parseICS(icsString, (err, data) => {
+   * ical.parseICSAsync(icsString, (err, data) => {
    *   if (err) console.error(err);
    *   else console.log(data);
    * });
-   *
-   * @todo for v1.0: Split into separate parseICS() (sync) and parseICSAsync() (Promise-based) functions.
-   * The current dual-mode API (sync if no callback, async if callback) is an anti-pattern that
-   * makes the function behavior unpredictable and harder to type correctly in TypeScript.
    */
-  parseICS(string, cb) {
+  parseICSAsync(string, cb) {
     const lines = string.split(/\r?\n/);
-
-    if (cb) {
-      // Async mode: use batching to prevent event loop blocking
-      setImmediate(() => {
-        this.parseLines(lines, PARSE_BATCH_SIZE, undefined, undefined, 0, cb);
-      });
-    } else {
-      // Sync mode: parse all at once (no batching)
-      return this.parseLines(lines);
-    }
+    setImmediate(() => {
+      this.parseLines(lines, PARSE_BATCH_SIZE, undefined, undefined, 0, cb);
+    });
   },
 };

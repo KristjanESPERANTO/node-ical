@@ -47,7 +47,10 @@ declare module 'node-ical' {
   export type NodeICalAsync = {
     fromURL: ((url: string, callback: NodeIcalCallback) => void) & ((url: string, options: FetchOptions | NodeIcalCallback, callback?: NodeIcalCallback) => void) & ((url: string) => Promise<CalendarResponse>);
 
+    /** @deprecated Use parseICSAsync() instead. */
     parseICS: ((body: string, callback: NodeIcalCallback) => void) & ((body: string) => Promise<CalendarResponse>);
+
+    parseICSAsync: (body: string) => Promise<CalendarResponse>;
 
     parseFile: ((file: string, callback: NodeIcalCallback) => void) & ((file: string) => Promise<CalendarResponse>);
   };
@@ -63,9 +66,16 @@ declare module 'node-ical' {
 
   export function fromURL(url: string): Promise<CalendarResponse>;
 
+  /** @deprecated Use parseICSAsync() instead. Callback support will be removed in a future version. */
   export function parseICS(body: string, callback: NodeIcalCallback): void;
 
   export function parseICS(body: string): CalendarResponse;
+
+  /**
+   * Parse iCal data from a string asynchronously.
+   * Returns a Promise. Uses batched parsing to avoid blocking the event loop.
+   */
+  export function parseICSAsync(body: string): Promise<CalendarResponse>;
 
   export function parseFile(file: string, callback: NodeIcalCallback): void;
 
