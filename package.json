@@ -45,8 +45,6 @@
       "@stylistic/max-len": "off",
       "@typescript-eslint/member-ordering": "off",
       "@typescript-eslint/naming-convention": "off",
-      "n/prefer-promises/fs": "off",
-      "no-useless-catch": "off",
       "unicorn/prefer-module": "off",
       "max-params": ["warn", 5]
     }

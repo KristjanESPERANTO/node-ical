@@ -61,7 +61,8 @@ const {getDateKey} = require('./lib/date-utils.js');
  */
 
 // utility to allow callbacks to be used for promises
-function promiseCallback(promise, cb) {
+function promiseCallback(fn, cb) {
+  const promise = fn();
   if (!cb) {
     return promise;
   }
@@ -97,6 +98,24 @@ const async = {};
 const autodetect = {};
 
 /**
+ * Promisified wrapper around ical.parseICS (which is callback-only).
+ * @param {string} data - Raw iCalendar string
+ * @returns {Promise<iCalData>}
+ */
+function parseICSAsync(data) {
+  return new Promise((resolve, reject) => {
+    ical.parseICS(data, (error, ics) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(ics);
+    });
+  });
+}
+
+/**
  * Download an iCal file from the web and parse it.
  *
  * @param {string} url                - URL of file to request.
@@ -117,28 +136,15 @@ async.fromURL = function (url, options, cb) {
 
   const fetchOptions = (options && typeof options === 'object') ? {...options} : {};
 
-  return promiseCallback(
-    (async () => {
-      const response = await fetch(url, fetchOptions);
-      if (!response.ok) {
-        // Mimic previous error style
-        throw new Error(`${response.status} ${response.statusText}`);
-      }
+  return promiseCallback(async () => {
+    const response = await fetch(url, fetchOptions);
+    if (!response.ok) {
+      // Mimic previous error style
+      throw new Error(`${response.status} ${response.statusText}`);
+    }
 
-      const data = await response.text();
-      return new Promise((resolve, reject) => {
-        ical.parseICS(data, (error, ics) => {
-          if (error) {
-            reject(error);
-            return;
-          }
-
-          resolve(ics);
-        });
-      });
-    })(),
-    cb,
-  );
+    return parseICSAsync(await response.text());
+  }, cb);
 };
 
 /**
@@ -152,23 +158,7 @@ async.fromURL = function (url, options, cb) {
  */
 async.parseFile = function (filename, cb) {
   return promiseCallback(
-    new Promise((resolve, reject) => {
-      fs.readFile(filename, 'utf8', (error, data) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-
-        ical.parseICS(data, (error, ics) => {
-          if (error) {
-            reject(error);
-            return;
-          }
-
-          resolve(ics);
-        });
-      });
-    }),
+    async () => parseICSAsync(await fs.promises.readFile(filename, 'utf8')),
     cb,
   );
 };
@@ -183,19 +173,7 @@ async.parseFile = function (filename, cb) {
  * @returns {optionalPromise} Promise is returned if no callback is passed.
  */
 async.parseICS = function (data, cb) {
-  return promiseCallback(
-    new Promise((resolve, reject) => {
-      ical.parseICS(data, (error, ics) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-
-        resolve(ics);
-      });
-    }),
-    cb,
-  );
+  return promiseCallback(() => parseICSAsync(data), cb);
 };
 
 /**
