@@ -40,7 +40,13 @@ describe('parseICS async mode', () => {
 
       assert.ok(data, 'Data should be returned');
 
-      const events = Object.values(data).filter(x => x.type === 'VEVENT');
+      const events = [];
+      for (const value of Object.values(data)) {
+        if (value.type === 'VEVENT') {
+          events.push(value);
+        }
+      }
+
       assert.equal(events.length, 1);
       assert.equal(events[0].summary, 'Valid Event');
       assert.equal(events[0].uid, 'valid-event-123');
@@ -50,8 +56,20 @@ describe('parseICS async mode', () => {
       const syncResult = ical.parseICS(validICS);
       const asyncResult = await ical.async.parseICS(validICS);
 
-      const syncEvents = Object.values(syncResult).filter(x => x.type === 'VEVENT');
-      const asyncEvents = Object.values(asyncResult).filter(x => x.type === 'VEVENT');
+      const syncEvents = [];
+      const asyncEvents = [];
+      for (const value of Object.values(syncResult)) {
+        if (value.type === 'VEVENT') {
+          syncEvents.push(value);
+        }
+      }
+
+      for (const value of Object.values(asyncResult)) {
+        if (value.type === 'VEVENT') {
+          asyncEvents.push(value);
+        }
+      }
+
       assert.equal(syncEvents.length, asyncEvents.length);
       assert.equal(syncEvents[0].summary, asyncEvents[0].summary);
       assert.equal(syncEvents[0].uid, asyncEvents[0].uid);

@@ -4,9 +4,6 @@
  * This file is compiled with `tsc --noEmit` but never executed.
  */
 
-/* eslint-disable @typescript-eslint/triple-slash-reference */
-/// <reference path="../node-ical.d.ts" />
-
 import type * as ical from 'node-ical';
 
 // ============================================================================
