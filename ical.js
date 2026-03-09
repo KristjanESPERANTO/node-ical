@@ -45,6 +45,29 @@ function getDurationString(duration) {
 }
 
 /**
+ * Look up a recurrence override using the same dual-key strategy used by
+ * storeRecurrenceOverride: prefer the precise ISO-string key for DATE-TIME
+ * entries, fall back to the date-only key.
+ * @param {Object} recurrences - Recurrences object to search in
+ * @param {string} dateKey - Date-only key (YYYY-MM-DD)
+ * @param {string|null} isoKey - Full ISO-string key, or null for DATE-only events
+ * @returns {Object|null} The matching override object or null
+ */
+// Look up a RECURRENCE-ID override by exact timestamp (timed events) or
+// date-only key (full-day events).
+// storeRecurrenceOverride stores every DATE-TIME entry under BOTH an ISO key
+// and a dateKey, so a miss on the ISO key unambiguously means "no override
+// for this specific instance" — falling back to dateKey would incorrectly
+// apply a different occurrence's override when two instances share a date.
+function lookupRecurrenceOverride(recurrences, dateKey, isoKey) {
+  if (!recurrences) {
+    return null;
+  }
+
+  return (isoKey ? recurrences[isoKey] : recurrences[dateKey]) ?? null;
+}
+
+/**
  * Store a recurrence override with dual-key strategy.
  * Uses both date-only (YYYY-MM-DD) and full ISO keys for DATE-TIME entries.
  * Implements RFC 5545 SEQUENCE logic: newer versions (higher SEQUENCE) replace older ones.
@@ -61,13 +84,12 @@ function storeRecurrenceOverride(recurrences, recurrenceId, recurrenceObject) {
   const dateKey = getDateKey(recurrenceId);
   const isoKey = recurrenceId.dateOnly === true ? null : recurrenceId.toISOString();
 
-  // Check for existing override: prefer ISO key if available (more precise), fallback to date key
-  // This handles both DATE-TIME (precise time) and DATE (date-only) recurrence IDs
-  const existing = (isoKey && recurrences[isoKey]) || recurrences[dateKey];
+  // Check for existing override using the shared lookup helper
+  const existing = lookupRecurrenceOverride(recurrences, dateKey, isoKey);
 
   // Check SEQUENCE to determine which version to keep (RFC 5545)
   // Normalize SEQUENCE to number, default to 0 if invalid/missing
-  if (existing !== undefined) {
+  if (existing) {
     const existingSeq = Number.isFinite(existing.sequence) ? existing.sequence : 0;
     const newSeq = Number.isFinite(recurrenceObject.sequence) ? recurrenceObject.sequence : 0;
 
@@ -1112,3 +1134,5 @@ module.exports = {
     }
   },
 };
+
+module.exports.lookupRecurrenceOverride = lookupRecurrenceOverride;

@@ -2,6 +2,8 @@ const fs = require('node:fs');
 const ical = require('./ical.js');
 const {getDateKey} = require('./lib/date-utils.js');
 
+const {lookupRecurrenceOverride} = ical;
+
 /**
  * ICal event object.
  *
@@ -478,16 +480,14 @@ function buildRecurringInstance(date, event, isFullDay, baseDurationMs, options)
     return null;
   }
 
-  // For timed events use only the precise ISO key: storeRecurrenceOverride (ical.js)
-  // stores every DATE-TIME RECURRENCE-ID under both the ISO key and the date-only
-  // key, so a miss on the ISO key unambiguously means "no override for this
-  // specific instance".  Falling back to the date-only key would incorrectly apply
-  // a different occurrence's override when two instances share the same calendar
-  // date (e.g. BYHOUR=9,15).  Full-day events have no ISO key and use dateKey only.
+  // Use shared lookupRecurrenceOverride (ical.js) — ISO key only for timed
+  // events so that a RECURRENCE-ID override is never applied to a different
+  // instance that happens to share the same calendar date (e.g. BYHOUR=9,15).
   const isoKey = isFullDay ? null : date.toISOString();
   const overrideEvent = includeOverrides
-    && (isoKey ? event.recurrences?.[isoKey] : event.recurrences?.[dateKey]);
-  const isOverride = Boolean(overrideEvent);
+    ? lookupRecurrenceOverride(event.recurrences, dateKey, isoKey)
+    : null;
+  const isOverride = overrideEvent !== null;
   const instanceEvent = isOverride ? overrideEvent : event;
 
   // Override's own DTSTART takes priority over the RRULE-generated date
