@@ -61,34 +61,32 @@ const {getDateKey} = require('./lib/date-utils.js');
  */
 
 // utility to allow callbacks to be used for promises
-function promiseCallback(fn, cb) {
-  const promise = new Promise(fn);
+function promiseCallback(promise, cb) {
   if (!cb) {
     return promise;
   }
 
-  // Store result/error outside .then/.catch to avoid double-callback
-  // if the user's callback throws (the thrown error would be caught by
-  // the promise chain and trigger .catch, calling cb a second time)
-  let callbackError = null;
-  let callbackResult = null;
-  let hasResult = false;
+  // Store result/error before invoking cb to avoid double-callback:
+  // if cb itself throws, we are no longer inside the promise chain so
+  // the error cannot accidentally trigger a second cb call.
+  (async () => {
+    let callbackError;
+    let callbackResult;
+    let hasResult = false;
 
-  promise
-    .then(returnValue => {
-      callbackResult = returnValue;
+    try {
+      callbackResult = await promise;
       hasResult = true;
-    })
-    .catch(error => {
+    } catch (error) {
       callbackError = error;
-    })
-    .finally(() => {
-      if (callbackError) {
-        cb(callbackError, null);
-      } else if (hasResult) {
-        cb(null, callbackResult);
-      }
-    });
+    }
+
+    if (callbackError) {
+      cb(callbackError, null);
+    } else if (hasResult) {
+      cb(null, callbackResult);
+    }
+  })();
 }
 
 // Sync functions
@@ -117,19 +115,18 @@ async.fromURL = function (url, options, cb) {
     options = undefined;
   }
 
-  return promiseCallback((resolve, reject) => {
-    const fetchOptions = (options && typeof options === 'object') ? {...options} : {};
+  const fetchOptions = (options && typeof options === 'object') ? {...options} : {};
 
-    fetch(url, fetchOptions)
-      .then(response => {
-        if (!response.ok) {
-          // Mimic previous error style
-          throw new Error(`${response.status} ${response.statusText}`);
-        }
+  return promiseCallback(
+    (async () => {
+      const response = await fetch(url, fetchOptions);
+      if (!response.ok) {
+        // Mimic previous error style
+        throw new Error(`${response.status} ${response.statusText}`);
+      }
 
-        return response.text();
-      })
-      .then(data => {
+      const data = await response.text();
+      return new Promise((resolve, reject) => {
         ical.parseICS(data, (error, ics) => {
           if (error) {
             reject(error);
@@ -138,11 +135,10 @@ async.fromURL = function (url, options, cb) {
 
           resolve(ics);
         });
-      })
-      .catch(error => {
-        reject(error);
       });
-  }, cb);
+    })(),
+    cb,
+  );
 };
 
 /**
@@ -155,23 +151,26 @@ async.fromURL = function (url, options, cb) {
  * @returns {optionalPromise} Promise is returned if no callback is passed.
  */
 async.parseFile = function (filename, cb) {
-  return promiseCallback((resolve, reject) => {
-    fs.readFile(filename, 'utf8', (error, data) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-
-      ical.parseICS(data, (error, ics) => {
+  return promiseCallback(
+    new Promise((resolve, reject) => {
+      fs.readFile(filename, 'utf8', (error, data) => {
         if (error) {
           reject(error);
           return;
         }
 
-        resolve(ics);
+        ical.parseICS(data, (error, ics) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          resolve(ics);
+        });
       });
-    });
-  }, cb);
+    }),
+    cb,
+  );
 };
 
 /**
@@ -184,16 +183,19 @@ async.parseFile = function (filename, cb) {
  * @returns {optionalPromise} Promise is returned if no callback is passed.
  */
 async.parseICS = function (data, cb) {
-  return promiseCallback((resolve, reject) => {
-    ical.parseICS(data, (error, ics) => {
-      if (error) {
-        reject(error);
-        return;
-      }
+  return promiseCallback(
+    new Promise((resolve, reject) => {
+      ical.parseICS(data, (error, ics) => {
+        if (error) {
+          reject(error);
+          return;
+        }
 
-      resolve(ics);
-    });
-  }, cb);
+        resolve(ics);
+      });
+    }),
+    cb,
+  );
 };
 
 /**
