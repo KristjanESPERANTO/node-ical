@@ -1,14 +1,12 @@
-/* eslint-disable prefer-arrow-callback */
-
 const assert = require('node:assert/strict');
 const {readFileSync} = require('node:fs');
 const path = require('node:path');
 const {describe, it} = require('mocha');
 const ical = require('../node-ical.js');
 
-describe('Non-UTC UNTIL in RRULE', function () {
-  describe('when DTSTART has TZID=Europe/Berlin', function () {
-    it('should convert non-UTC UNTIL to UTC', function () {
+describe('Non-UTC UNTIL in RRULE', () => {
+  describe('when DTSTART has TZID=Europe/Berlin', () => {
+    it('should convert non-UTC UNTIL to UTC', () => {
       const data = readFileSync(path.join(__dirname, 'fixtures', 'non-utc-until.ics'), 'utf8');
       const parsed = ical.parseICS(data);
 
@@ -34,7 +32,7 @@ describe('Non-UTC UNTIL in RRULE', function () {
       assert.strictEqual(until.getTime(), expectedUtc.getTime());
     });
 
-    it('should generate recurrences correctly with converted UNTIL', function () {
+    it('should generate recurrences correctly with converted UNTIL', () => {
       const data = readFileSync(path.join(__dirname, 'fixtures', 'non-utc-until.ics'), 'utf8');
       const parsed = ical.parseICS(data);
 
@@ -54,8 +52,8 @@ describe('Non-UTC UNTIL in RRULE', function () {
     });
   });
 
-  describe('when DTSTART has TZID=America/New_York', function () {
-    it('should convert non-UTC UNTIL to UTC for different timezone', function () {
+  describe('when DTSTART has TZID=America/New_York', () => {
+    it('should convert non-UTC UNTIL to UTC for different timezone', () => {
       const data = readFileSync(path.join(__dirname, 'fixtures', 'non-utc-until-ny.ics'), 'utf8');
       const parsed = ical.parseICS(data);
 
@@ -74,8 +72,8 @@ describe('Non-UTC UNTIL in RRULE', function () {
     });
   });
 
-  describe('when UNTIL is already in UTC format', function () {
-    it('should not modify UTC UNTIL values', function () {
+  describe('when UNTIL is already in UTC format', () => {
+    it('should not modify UTC UNTIL values', () => {
       const icsData = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Test//Test//EN
@@ -99,8 +97,8 @@ END:VCALENDAR`;
     });
   });
 
-  describe('when DTSTART has no TZID (floating time)', function () {
-    it('should not attempt to convert UNTIL', function () {
+  describe('when DTSTART has no TZID (floating time)', () => {
+    it('should not attempt to convert UNTIL', () => {
       const icsData = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Test//Test//EN
@@ -122,8 +120,8 @@ END:VCALENDAR`;
     });
   });
 
-  describe('edge cases', function () {
-    it('should handle DST transitions correctly', function () {
+  describe('edge cases', () => {
+    it('should handle DST transitions correctly', () => {
       // Test with a date that crosses DST boundary
       const icsData = `BEGIN:VCALENDAR
 VERSION:2.0
@@ -151,7 +149,7 @@ END:VCALENDAR`;
       assert.strictEqual(until.getTime(), expectedUtc.getTime());
     });
 
-    it('should gracefully handle invalid timezone IDs', function () {
+    it('should gracefully handle invalid timezone IDs', () => {
       const icsData = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Test//Test//EN
@@ -171,7 +169,7 @@ END:VCALENDAR`;
       }
     });
 
-    it('should handle DATE-only UNTIL without modification', function () {
+    it('should handle DATE-only UNTIL without modification', () => {
       // DATE-only UNTIL (without time component) should be left as-is
       const icsData = `BEGIN:VCALENDAR
 VERSION:2.0
