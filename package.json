@@ -43,7 +43,6 @@
     "space": 2,
     "rules": {
       "@stylistic/max-len": "off",
-      "@typescript-eslint/member-ordering": "off",
       "@typescript-eslint/naming-convention": "off",
       "unicorn/prefer-module": "off",
       "max-params": ["warn", 5]
