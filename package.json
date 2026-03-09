@@ -49,8 +49,6 @@
       "no-useless-catch": "off",
       "promise/prefer-await-to-then": "off",
       "unicorn/prefer-module": "off",
-      "unicorn/prefer-spread": "off",
-      "import-x/no-extraneous-dependencies": "off",
       "max-params": ["warn", 5]
     }
   },
