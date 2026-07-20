@@ -55,7 +55,6 @@ describe('parseICS async mode', () => {
     it('should parse valid ICS via callback', async () => {
       const data = await parseICSPromise(validICS);
       assert.ok(data, 'Data should be returned');
-
       const events = Object.values(data).filter(x => x.type === 'VEVENT');
       assert.equal(events.length, 1);
       assert.equal(events[0].summary, 'Valid Event');
