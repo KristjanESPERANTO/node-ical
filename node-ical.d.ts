@@ -19,6 +19,8 @@ declare module 'node-ical' {
    * Minimal Fetch options type (subset of RequestInit) to avoid requiring DOM lib.
    */
   export type FetchOptions = {
+    /** Additional fetch options (e.g. agent, redirect, follow, timeout, signal, etc.) */
+    [key: string]: unknown;
     method?: string;
     /**
      * Accept common header container shapes without depending on DOM lib types.
@@ -28,8 +30,6 @@ declare module 'node-ical' {
     headers?: Record<string, string> | Iterable<[string, string]>;
     /** Request body (caller supplied) */
     body?: unknown;
-    /** Additional fetch options (e.g. agent, redirect, follow, timeout, signal, etc.) */
-    [key: string]: unknown;
   };
 
   /**
@@ -173,10 +173,10 @@ declare module 'node-ical' {
    * with VCALENDAR-level properties (e.g., WR-CALNAME, WR-TIMEZONE, method, version).
    */
   export type CalendarResponse = {
-    /** VCALENDAR-level properties (calendar metadata) */
-    vcalendar?: VCalendar;
     /** Calendar components (events, todos, etc.) indexed by UID */
     [uid: string]: CalendarComponent | VCalendar | undefined;
+    /** VCALENDAR-level properties (calendar metadata) */
+    vcalendar?: VCalendar;
   };
 
   export type CalendarComponent = VTimeZone | VEvent | VTodo | VJournal | VFreebusy | VCalendar;
@@ -482,6 +482,8 @@ declare module 'node-ical' {
   };
 
   export type Organizer = ParameterValue<string, {
+    /** Allow additional parameters from parseParameters() */
+    [key: string]: string | undefined;
     /** Common Name - display name of the organizer */
     CN?: string;
     /** Directory entry reference */
@@ -492,11 +494,11 @@ declare module 'node-ical' {
     LANGUAGE?: string;
     /** Schedule agent */
     'SCHEDULE-AGENT'?: string;
-    /** Allow additional parameters from parseParameters() */
-    [key: string]: string | undefined;
   }>;
 
   export type Attendee = ParameterValue<string, {
+    /** Allow additional parameters from parseParameters() */
+    [key: string]: string | number | boolean | undefined;
     /** Calendar user type */
     CUTYPE?: AttendeeCUType;
     /** Participation role */
@@ -519,8 +521,6 @@ declare module 'node-ical' {
     DIR?: string;
     /** Language for text values */
     LANGUAGE?: string;
-    /** Allow additional parameters from parseParameters() */
-    [key: string]: string | number | boolean | undefined;
   }>;
 
   export type AttendeeCUType = 'INDIVIDUAL' | 'UNKNOWN' | 'GROUP' | 'ROOM' | string;
