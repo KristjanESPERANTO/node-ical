@@ -113,6 +113,39 @@ describe('expandRecurringEvent', () => {
         'RDATE should add new occurrences but not duplicate RRULE-generated ones',
       );
     });
+
+    it('should expand all-day RDATE values and apply EXDATE', () => {
+      const events = ical.parseICS([
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'BEGIN:VEVENT',
+        'UID:rdate-all-day@test',
+        'DTSTART;VALUE=DATE:20240101',
+        'DTEND;VALUE=DATE:20240102',
+        'RDATE;VALUE=DATE:20240103,20240105',
+        'EXDATE;VALUE=DATE:20240103',
+        'SUMMARY:All-day RDATE event',
+        'END:VEVENT',
+        'END:VCALENDAR',
+      ].join('\n'));
+      const event = Object.values(events).find(item => item.type === 'VEVENT');
+
+      const instances = ical.expandRecurringEvent(event, {
+        from: new Date(2024, 0, 1),
+        to: new Date(2024, 0, 6),
+      });
+
+      assert.deepStrictEqual(
+        instances.map(instance => [
+          instance.start.getFullYear(),
+          instance.start.getMonth() + 1,
+          instance.start.getDate(),
+        ]),
+        [[2024, 1, 1], [2024, 1, 5]],
+        'EXDATE should remove the matching all-day RDATE occurrence',
+      );
+      assert.ok(instances.every(instance => instance.isFullDay));
+    });
   });
 
   describe('Return value structure', () => {
