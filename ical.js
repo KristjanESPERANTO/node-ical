@@ -14,6 +14,7 @@ import {
   createDateParameterFactory,
   createComponentParameterHandlers,
   createExdateParameterFactory,
+  createRdateParameterFactory,
 } from './lib/ical-parser-utils.js';
 import {Temporal} from './lib/temporal.js';
 import tzUtil from './lib/tz-utils.js';
@@ -202,6 +203,7 @@ const exdateParameter = createExdateParameterFactory({
   dateParameter,
   getDateKey,
 });
+const rdateParameter = createRdateParameterFactory({dateParameter});
 
 // EXDATE is an entry that represents exceptions to a recurrence rule (ex: "repeat every day except on 7/4").
 // The EXDATE entry itself can also contain a comma-separated list, so we parse each date separately.
@@ -292,6 +294,7 @@ const ical = {
       throw new Error('duplicate DUE encountered, line=' + line);
     },
     EXDATE: exdateParameter('exdate'),
+    RDATE: rdateParameter('rdate'),
     CLASS: storeParameter('class'),
     TRANSP: storeParameter('transparency'),
     GEO: geoParameter('geo'),
