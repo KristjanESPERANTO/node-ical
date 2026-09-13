@@ -255,6 +255,7 @@ declare module 'node-ical' {
     rrule?: RRule;
     recurrenceid?: DateWithTimeZone;
     exdate?: Record<string, DateWithTimeZone>;
+    rdate?: DateWithTimeZone[];
   };
 
   export type VEvent = CalendarComponentCommon & BaseComponent & {
