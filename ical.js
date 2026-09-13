@@ -575,6 +575,25 @@ const ical = {
     // Sync mode: parse all at once (no batching)
     return parseContentLines(this, contentLines, {}, []);
   },
+
+  /**
+   * Parse an iCalendar string asynchronously.
+   *
+   * @param {string} string - Raw iCalendar data (ICS format)
+   * @returns {Promise<object>} Promise resolving to parsed calendar data
+   */
+  parseICSAsync(string) {
+    return new Promise((resolve, reject) => {
+      this.parseICS(string, (error, data) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve(data);
+      });
+    });
+  },
 };
 
 const {objectHandlers} = ical;
