@@ -6,6 +6,7 @@ import {toText as toTextFunction} from 'rrule-temporal/totext';
 import {getDateKey} from './lib/date-utils.js';
 import {
   parseValue,
+  lookupRecurrenceOverride,
   finalizeEndedComponent,
   createTemporalRule,
   storeParameter,
@@ -37,11 +38,11 @@ function storeRecurrenceOverride(recurrences, recurrenceId, recurrenceObject) {
 
   // Check for existing override: prefer ISO key if available (more precise), fallback to date key
   // This handles both DATE-TIME (precise time) and DATE (date-only) recurrence IDs
-  const existing = (isoKey && recurrences[isoKey]) || recurrences[dateKey];
+  const existing = lookupRecurrenceOverride(recurrences, dateKey, isoKey);
 
   // Check SEQUENCE to determine which version to keep (RFC 5545)
   // Normalize SEQUENCE to number, default to 0 if invalid/missing
-  if (existing !== undefined) {
+  if (existing !== null) {
     const existingSeq = Number.isFinite(existing.sequence) ? existing.sequence : 0;
     const newSeq = Number.isFinite(recurrenceObject.sequence) ? recurrenceObject.sequence : 0;
 
