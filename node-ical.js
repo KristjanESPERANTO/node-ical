@@ -35,6 +35,7 @@ const {
   fromURL,
   parseFile,
   parseICS,
+  parseICSAsync,
   sync,
   async,
 } = publicApi;
@@ -43,6 +44,7 @@ export {
   fromURL,
   parseFile,
   parseICS,
+  parseICSAsync,
   sync,
   async,
   objectHandlers,
