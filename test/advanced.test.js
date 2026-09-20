@@ -364,7 +364,7 @@ describe('parser: advanced cases', () => {
   describe('Timezone detection', () => {
     it('infers/retains timezone per event (mixed-timezone-handling.ics)', () => {
       const data = ical.parseFile('./test/fixtures/mixed-timezone-handling.ics');
-      const events = Object.values(data).filter(x => x.type === 'VEVENT');
+      const events = Object.values(data).filter(event => event.type === 'VEVENT');
       assert.equal(events.length, 5);
       const uids = [
         '1C9439B1-FF65-11D6-9973-003065F99D04',
