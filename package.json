@@ -34,6 +34,7 @@
     "build:cjs": "node build/build-cjs.js",
     "pretest": "npm run build:cjs",
     "test": "npm run test:types && xo && mocha --extension js --timeout 8000",
+    "test:types:compat": "mocha test/package-types-compat.js --timeout 30000",
     "test:types": "tsc --project test/tsconfig.json",
     "lint": "xo",
     "lintfix": "xo --fix",
