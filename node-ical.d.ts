@@ -26,9 +26,13 @@ declare module 'node-ical' {
      * - Any iterable of [key,value] tuples (covers Arrays and WHATWG Headers at runtime)
      */
     headers?: Record<string, string> | Iterable<[string, string]>;
-    /** Request body (caller supplied) */
+    /**
+    Request body (caller supplied)
+    */
     body?: unknown;
-    /** Additional fetch options (e.g. agent, redirect, follow, timeout, signal, etc.) */
+    /**
+    Additional fetch options (e.g. agent, redirect, follow, timeout, signal, etc.)
+    */
     [key: string]: unknown;
   };
 
@@ -116,11 +120,17 @@ declare module 'node-ical' {
     sync: typeof sync;
     async: typeof async;
     expandRecurringEvent: typeof expandRecurringEvent;
-    /** Internal compatibility hooks; intentionally left loose to avoid encouraging direct use. */
+    /**
+    Internal compatibility hooks; intentionally left loose to avoid encouraging direct use.
+    */
     objectHandlers: unknown;
-    /** Internal compatibility hooks; intentionally left loose to avoid encouraging direct use. */
+    /**
+    Internal compatibility hooks; intentionally left loose to avoid encouraging direct use.
+    */
     handleObject: unknown;
-    /** Internal compatibility hooks; intentionally left loose to avoid encouraging direct use. */
+    /**
+    Internal compatibility hooks; intentionally left loose to avoid encouraging direct use.
+    */
     parseLines: unknown;
   };
 
@@ -130,15 +140,25 @@ declare module 'node-ical' {
    * Options for expanding recurring events
    */
   export type ExpandRecurringEventOptions = {
-    /** Start of date range (inclusive) */
+    /**
+    Start of date range (inclusive)
+    */
     from: Date;
-    /** End of date range (inclusive) */
+    /**
+    End of date range (inclusive)
+    */
     to: Date;
-    /** Whether to apply RECURRENCE-ID overrides (default: true) */
+    /**
+    Whether to apply RECURRENCE-ID overrides (default: true)
+    */
     includeOverrides?: boolean;
-    /** Whether to exclude EXDATE dates (default: true) */
+    /**
+    Whether to exclude EXDATE dates (default: true)
+    */
     excludeExdates?: boolean;
-    /** Whether to include events that started before range but are still ongoing (default: false) */
+    /**
+    Whether to include events that started before range but are still ongoing (default: false)
+    */
     expandOngoing?: boolean;
   };
 
@@ -146,19 +166,33 @@ declare module 'node-ical' {
    * An individual instance of a recurring or non-recurring event
    */
   export type EventInstance = {
-    /** Start date/time of this instance */
+    /**
+    Start date/time of this instance
+    */
     start: DateWithTimeZone;
-    /** End date/time of this instance */
+    /**
+    End date/time of this instance
+    */
     end: DateWithTimeZone;
-    /** Event summary/title - copied from event, may include params */
+    /**
+    Event summary/title - copied from event, may include params
+    */
     summary: ParameterValue;
-    /** Whether this is a full-day event (date-only, no time component) */
+    /**
+    Whether this is a full-day event (date-only, no time component)
+    */
     isFullDay: boolean;
-    /** Whether this instance came from a recurring rule */
+    /**
+    Whether this instance came from a recurring rule
+    */
     isRecurring: boolean;
-    /** Whether this instance is a RECURRENCE-ID override of the base event */
+    /**
+    Whether this instance is a RECURRENCE-ID override of the base event
+    */
     isOverride: boolean;
-    /** The VEVENT object for this instance (base event or override) */
+    /**
+    The VEVENT object for this instance (base event or override)
+    */
     event: VEvent;
   };
 
@@ -173,9 +207,13 @@ declare module 'node-ical' {
    * with VCALENDAR-level properties (e.g., WR-CALNAME, WR-TIMEZONE, method, version).
    */
   export type CalendarResponse = {
-    /** VCALENDAR-level properties (calendar metadata) */
+    /**
+    VCALENDAR-level properties (calendar metadata)
+    */
     vcalendar?: VCalendar;
-    /** Calendar components (events, todos, etc.) indexed by UID */
+    /**
+    Calendar components (events, todos, etc.) indexed by UID
+    */
     [uid: string]: CalendarComponent | VCalendar | undefined;
   };
 
@@ -267,7 +305,9 @@ declare module 'node-ical' {
     summary: ParameterValue;
     // VEvent-specific fields
     method?: Method;
-    /** Event location – may include params (e.g., LANGUAGE, ALTREP) */
+    /**
+    Event location – may include params (e.g., LANGUAGE, ALTREP)
+    */
     location?: ParameterValue;
     end?: DateWithTimeZone;
     transparency?: Transparency;
@@ -320,16 +360,26 @@ declare module 'node-ical' {
     dtstamp: DateWithTimeZone;
     // VTodo-specific fields
     method?: Method;
-    /** Task location – may include params (e.g., LANGUAGE, ALTREP) */
+    /**
+    Task location – may include params (e.g., LANGUAGE, ALTREP)
+    */
     location?: ParameterValue;
-    /** When this task is due */
+    /**
+    When this task is due
+    */
     due?: DateWithTimeZone;
-    /** When this task was completed */
+    /**
+    When this task was completed
+    */
     completed?: DateWithTimeZone;
-    /** Percentage of task completion (0-100) */
+    /**
+    Percentage of task completion (0-100)
+    */
     completion?: string;
     status?: VTodoStatus;
-    /** Task priority (0 = undefined, 1 = highest, 9 = lowest) */
+    /**
+    Task priority (0 = undefined, 1 = highest, 9 = lowest)
+    */
     priority?: number;
     /**
      * Modified instances of recurring todos (RECURRENCE-ID overrides).
@@ -374,11 +424,17 @@ declare module 'node-ical' {
    * Free/busy period with start and end times
    */
   export type FreebusyPeriod = {
-    /** Free/busy period type */
+    /**
+    Free/busy period type
+    */
     type: FreebusyType;
-    /** Start time of the period */
+    /**
+    Start time of the period
+    */
     start: DateWithTimeZone;
-    /** End time of the period */
+    /**
+    End time of the period
+    */
     end: DateWithTimeZone;
   };
 
@@ -400,18 +456,30 @@ declare module 'node-ical' {
     type: 'VFREEBUSY';
     method?: Method;
     uid?: string;
-    /** Organizer of the free/busy time (optional, not always present) */
+    /**
+    Organizer of the free/busy time (optional, not always present)
+    */
     organizer?: Organizer;
-    /** Start of free/busy period */
+    /**
+    Start of free/busy period
+    */
     start?: DateWithTimeZone;
-    /** End of free/busy period */
+    /**
+    End of free/busy period
+    */
     end?: DateWithTimeZone;
     dtstamp?: DateWithTimeZone;
-    /** URL to access the free/busy information */
+    /**
+    URL to access the free/busy information
+    */
     url?: string;
-    /** Array of free/busy time periods */
+    /**
+    Array of free/busy time periods
+    */
     freebusy?: FreebusyPeriod[];
-    /** Attendee information */
+    /**
+    Attendee information
+    */
     attendee?: Attendee[] | Attendee;
   };
 
@@ -433,11 +501,17 @@ declare module 'node-ical' {
     version?: string;
     calscale?: 'GREGORIAN' | string;
     method?: Method;
-    /** Calendar name (X-WR-CALNAME in ICS file) */
+    /**
+    Calendar name (X-WR-CALNAME in ICS file)
+    */
     'WR-CALNAME'?: string;
-    /** Calendar description (X-WR-CALDESC in ICS file) */
+    /**
+    Calendar description (X-WR-CALDESC in ICS file)
+    */
     'WR-CALDESC'?: string;
-    /** Default timezone (X-WR-TIMEZONE in ICS file) */
+    /**
+    Default timezone (X-WR-TIMEZONE in ICS file)
+    */
     'WR-TIMEZONE'?: string;
   };
 
@@ -475,51 +549,91 @@ declare module 'node-ical' {
    *   : event.summary.val;
    */
   export type ParameterValue<T = string, P = Record<string, string>> = T | {
-    /** The actual property value */
+    /**
+    The actual property value
+    */
     val: T;
-    /** ICalendar parameters (e.g., LANGUAGE, ENCODING) */
+    /**
+    ICalendar parameters (e.g., LANGUAGE, ENCODING)
+    */
     params: P;
   };
 
   export type Organizer = ParameterValue<string, {
-    /** Common Name - display name of the organizer */
+    /**
+    Common Name - display name of the organizer
+    */
     CN?: string;
-    /** Directory entry reference */
+    /**
+    Directory entry reference
+    */
     DIR?: string;
-    /** Sent by delegate */
+    /**
+    Sent by delegate
+    */
     'SENT-BY'?: string;
-    /** Language for text values */
+    /**
+    Language for text values
+    */
     LANGUAGE?: string;
-    /** Schedule agent */
+    /**
+    Schedule agent
+    */
     'SCHEDULE-AGENT'?: string;
-    /** Allow additional parameters from parseParameters() */
+    /**
+    Allow additional parameters from parseParameters()
+    */
     [key: string]: string | undefined;
   }>;
 
   export type Attendee = ParameterValue<string, {
-    /** Calendar user type */
+    /**
+    Calendar user type
+    */
     CUTYPE?: AttendeeCUType;
-    /** Participation role */
+    /**
+    Participation role
+    */
     ROLE?: AttendeeRole;
-    /** Participation status */
+    /**
+    Participation status
+    */
     PARTSTAT?: AttendeePartStat;
-    /** RSVP expectation */
+    /**
+    RSVP expectation
+    */
     RSVP?: boolean;
-    /** Common Name - display name of attendee */
+    /**
+    Common Name - display name of attendee
+    */
     CN?: string;
-    /** Number of guests (non-standard) */
+    /**
+    Number of guests (non-standard)
+    */
     'X-NUM-GUESTS'?: number;
-    /** Delegated to */
+    /**
+    Delegated to
+    */
     'DELEGATED-TO'?: string;
-    /** Delegated from */
+    /**
+    Delegated from
+    */
     'DELEGATED-FROM'?: string;
-    /** Group membership */
+    /**
+    Group membership
+    */
     MEMBER?: string;
-    /** Directory entry reference */
+    /**
+    Directory entry reference
+    */
     DIR?: string;
-    /** Language for text values */
+    /**
+    Language for text values
+    */
     LANGUAGE?: string;
-    /** Allow additional parameters from parseParameters() */
+    /**
+    Allow additional parameters from parseParameters()
+    */
     [key: string]: string | number | boolean | undefined;
   }>;
 

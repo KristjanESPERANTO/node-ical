@@ -1,8 +1,12 @@
 {
   "name": "node-ical",
   "version": "0.27.2",
+  "description": "NodeJS class for parsing iCalendar/ICS files",
+  "license": "Apache-2.0",
+  "repository": "github:jens-maus/node-ical",
+  "homepage": "https://github.com/jens-maus/node-ical",
+  "author": "Jens Maus <mail@jens-maus.de>",
   "type": "module",
-  "main": "node-ical.cjs",
   "exports": {
     ".": {
       "types": "./node-ical.d.ts",
@@ -12,11 +16,27 @@
     },
     "./package.json": "./package.json"
   },
-  "types": "node-ical.d.ts",
-  "description": "NodeJS class for parsing iCalendar/ICS files",
+  "main": "./node-ical.cjs",
+  "types": "./node-ical.d.ts",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "examples": "node examples/example-rrule-basic.js && node examples/example-rrule-moment.js && node examples/example-rrule-luxon.js && node examples/example-rrule-dayjs.js && node examples/example-rrule-datefns.js && node examples/example-rrule-vanilla.js && node examples/example.js",
+    "build:cjs": "node build/build-cjs.js",
+    "pretest": "npm run build:cjs",
+    "test": "npm run test:types && xo && mocha --extension js --timeout 8000",
+    "test:types": "tsc --project test/tsconfig.json",
+    "lint": "xo",
+    "lintfix": "xo --fix",
+    "prepare": "simple-git-hooks && npm run build:cjs",
+    "prepack": "npm run build:cjs",
+    "build": "node build/update-windows-zones.js",
+    "build:strict": "node build/update-windows-zones.js --strict"
+  },
   "files": [
-    "node-ical.cjs",
     "node-ical.js",
+    "node-ical.cjs",
     "node-ical.d.ts",
     "ical.js",
     "lib/**/*.js",
@@ -28,16 +48,6 @@
     "calendar",
     "nodejs"
   ],
-  "homepage": "https://github.com/jens-maus/node-ical",
-  "author": "Jens Maus <mail@jens-maus.de>",
-  "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/jens-maus/node-ical.git"
-  },
-  "engines": {
-    "node": ">=22"
-  },
   "dependencies": {
     "rrule-temporal": "^2.2.4",
     "temporal-polyfill": "^1.0.4"
@@ -70,19 +80,6 @@
       "regexp/prefer-named-capture-group": "off",
       "unicorn/consistent-boolean-name": "off"
     }
-  },
-  "scripts": {
-    "examples": "node examples/example-rrule-basic.js && node examples/example-rrule-moment.js && node examples/example-rrule-luxon.js && node examples/example-rrule-dayjs.js && node examples/example-rrule-datefns.js && node examples/example-rrule-vanilla.js && node examples/example.js",
-    "build:cjs": "node build/build-cjs.js",
-    "pretest": "npm run build:cjs",
-    "test": "npm run test:types && xo && mocha --extension js --timeout 8000",
-    "test:types": "tsc --project test/tsconfig.json",
-    "lint": "xo",
-    "lintfix": "xo --fix",
-    "prepare": "simple-git-hooks && npm run build:cjs",
-    "prepack": "npm run build:cjs",
-    "build": "node build/update-windows-zones.js",
-    "build:strict": "node build/update-windows-zones.js --strict"
   },
   "simple-git-hooks": {
     "pre-commit": "npx --no lint-staged",
