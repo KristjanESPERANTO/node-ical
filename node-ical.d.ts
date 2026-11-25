@@ -55,7 +55,12 @@ export type NodeICalAsync = {
       & ((url: string, options: FetchOptions | NodeIcalCallback, callback?: NodeIcalCallback) => void)
       & ((url: string) => Promise<CalendarResponse>);
 
+  /**
+   * @deprecated Use parseICSAsync() instead.
+   */
   parseICS: ((body: string, callback: NodeIcalCallback) => void) & ((body: string) => Promise<CalendarResponse>);
+
+  parseICSAsync: (body: string) => Promise<CalendarResponse>;
 
   parseFile: ((file: string, callback: NodeIcalCallback) => void) & ((file: string) => Promise<CalendarResponse>);
 };
@@ -71,9 +76,19 @@ export function fromURL(url: string, options: FetchOptions | NodeIcalCallback, c
 
 export function fromURL(url: string): Promise<CalendarResponse>;
 
+/**
+ * Parse iCal data with callback mode.
+ * @deprecated Use parseICSAsync() instead. Callback support will be removed in a future version.
+ */
 export function parseICS(body: string, callback: NodeIcalCallback): void;
 
 export function parseICS(body: string): CalendarResponse;
+
+/**
+ * Parse iCal data from a string asynchronously.
+ * Returns a Promise. Uses batched parsing to avoid blocking the event loop.
+ */
+export function parseICSAsync(body: string): Promise<CalendarResponse>;
 
 export function parseFile(file: string, callback: NodeIcalCallback): void;
 
@@ -116,7 +131,9 @@ export function expandRecurringEvent(
 declare const _default: {
   fromURL: typeof fromURL;
   parseFile: typeof parseFile;
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   parseICS: typeof parseICS;
+  parseICSAsync: typeof parseICSAsync;
   sync: typeof sync;
   async: typeof async;
   expandRecurringEvent: typeof expandRecurringEvent;
