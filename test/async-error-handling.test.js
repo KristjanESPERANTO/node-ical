@@ -55,8 +55,12 @@ describe('parseICS async mode', () => {
     it('should parse valid ICS via callback', async () => {
       const data = await parseICSPromise(validICS);
       assert.ok(data, 'Data should be returned');
-
-      const events = Object.values(data).filter(value => value.type === 'VEVENT');
+      const events = [];
+      for (const value of Object.values(data)) {
+        if (value.type === 'VEVENT') {
+          events.push(value);
+        }
+      }
 
       assert.equal(events.length, 1);
       assert.equal(events[0].summary, 'Valid Event');
@@ -67,8 +71,19 @@ describe('parseICS async mode', () => {
       const syncResult = ical.sync.parseICS(validICS);
       const asyncResult = await parseICSPromise(validICS);
 
-      const syncEvents = Object.values(syncResult).filter(value => value.type === 'VEVENT');
-      const asyncEvents = Object.values(asyncResult).filter(value => value.type === 'VEVENT');
+      const syncEvents = [];
+      const asyncEvents = [];
+      for (const value of Object.values(syncResult)) {
+        if (value.type === 'VEVENT') {
+          syncEvents.push(value);
+        }
+      }
+
+      for (const value of Object.values(asyncResult)) {
+        if (value.type === 'VEVENT') {
+          asyncEvents.push(value);
+        }
+      }
 
       assert.equal(syncEvents.length, asyncEvents.length);
       assert.equal(syncEvents[0].summary, asyncEvents[0].summary);
@@ -132,7 +147,12 @@ END:VEVENT
 END:VCALENDAR`;
 
       const data = await parseICSPromise(multiEventICS);
-      const events = Object.values(data).filter(value => value.type === 'VEVENT');
+      const events = [];
+      for (const value of Object.values(data)) {
+        if (value.type === 'VEVENT') {
+          events.push(value);
+        }
+      }
 
       assert.equal(events.length, 2);
     });
