@@ -48,6 +48,71 @@ describe('expandRecurringEvent', () => {
 
       assert.strictEqual(instances.length, 0, 'Should return empty array for out-of-range event');
     });
+
+    it('should expand RDATE-only events including DTSTART', () => {
+      const events = ical.parseICS([
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'BEGIN:VEVENT',
+        'UID:rdate-only@test',
+        'DTSTART:20240101T100000Z',
+        'RDATE:20240103T100000Z,20240105T100000Z',
+        'SUMMARY:RDATE only event',
+        'END:VEVENT',
+        'END:VCALENDAR',
+      ].join('\n'));
+      const event = Object.values(events).find(item => item.type === 'VEVENT');
+
+      assert.ok(Array.isArray(event.rdate), 'RDATE should be parsed as an array');
+      assert.strictEqual(event.rdate.length, 2, 'RDATE should contain two explicit dates');
+
+      const instances = ical.expandRecurringEvent(event, {
+        from: new Date('2024-01-01T00:00:00Z'),
+        to: new Date('2024-01-10T00:00:00Z'),
+      });
+
+      assert.deepStrictEqual(
+        instances.map(instance => instance.start.toISOString()),
+        [
+          '2024-01-01T10:00:00.000Z',
+          '2024-01-03T10:00:00.000Z',
+          '2024-01-05T10:00:00.000Z',
+        ],
+        'DTSTART and RDATE occurrences should all be expanded',
+      );
+      assert.ok(instances.every(instance => instance.isRecurring), 'RDATE occurrences should be marked recurring');
+    });
+
+    it('should merge RRULE and RDATE occurrences without duplicates', () => {
+      const events = ical.parseICS([
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'BEGIN:VEVENT',
+        'UID:rdate-rrule@test',
+        'DTSTART:20240101T100000Z',
+        'RRULE:FREQ=DAILY;COUNT=2',
+        'RDATE:20240102T100000Z,20240105T100000Z',
+        'SUMMARY:RDATE plus RRULE event',
+        'END:VEVENT',
+        'END:VCALENDAR',
+      ].join('\n'));
+      const event = Object.values(events).find(item => item.type === 'VEVENT');
+
+      const instances = ical.expandRecurringEvent(event, {
+        from: new Date('2024-01-01T00:00:00Z'),
+        to: new Date('2024-01-10T00:00:00Z'),
+      });
+
+      assert.deepStrictEqual(
+        instances.map(instance => instance.start.toISOString()),
+        [
+          '2024-01-01T10:00:00.000Z',
+          '2024-01-02T10:00:00.000Z',
+          '2024-01-05T10:00:00.000Z',
+        ],
+        'RDATE should add new occurrences but not duplicate RRULE-generated ones',
+      );
+    });
   });
 
   describe('Return value structure', () => {
@@ -928,6 +993,30 @@ describe('expandRecurringEvent', () => {
       ].join('\r\n'))).find(event => event.type === 'VEVENT');
 
       // The 2025-10-25 instance runs 25 hours, until 2025-10-26 10:00 CET (09:00Z)
+      const instances = ical.expandRecurringEvent(event, {
+        from: new Date('2025-10-26T08:30:00Z'),
+        to: new Date('2025-10-26T08:45:00Z'),
+        expandOngoing: true,
+      });
+
+      assert.deepStrictEqual(instances.map(instance => [instance.start.toISOString(), instance.end.toISOString()]), [
+        ['2025-10-25T08:00:00.000Z', '2025-10-26T09:00:00.000Z'],
+      ]);
+    });
+
+    it('should include an ongoing RDATE instance with a nominal duration across DST', () => {
+      const event = Object.values(ical.parseICS([
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'BEGIN:VEVENT',
+        'UID:rdate-duration-ongoing-dst@node-ical-test',
+        'DTSTART;TZID=Europe/Berlin:20251018T100000',
+        'DURATION:P1D',
+        'RDATE;TZID=Europe/Berlin:20251025T100000',
+        'END:VEVENT',
+        'END:VCALENDAR',
+      ].join('\r\n'))).find(event => event.type === 'VEVENT');
+
       const instances = ical.expandRecurringEvent(event, {
         from: new Date('2025-10-26T08:30:00Z'),
         to: new Date('2025-10-26T08:45:00Z'),
